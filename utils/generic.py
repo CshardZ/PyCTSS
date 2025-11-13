@@ -1,11 +1,11 @@
 import pathlib
-from . import variables
+from ..app import config
 
 
 # Main Functions
 # =======================================================================================
 def get_app_directory_path():
-    return pathlib.Path.home() / variables.DESKTOP_DIR / variables.APP_DIR
+    return pathlib.Path.home() / config.DESKTOP_DIR / config.APP_DIR
 
 
 
@@ -16,7 +16,7 @@ def build_menu_info(menu_items):
 
     for item in menu_items:
         raw_menu[item[0].lower()] = item
-        color = variables.RICH_COLORS[color_index]
+        color = config.RICH_COLORS[color_index]
         command_letter = f"[bold {color}]{item[0]}[/bold {color}]"
         with_brackets = f"[{command_letter}]"
         formated_menu[with_brackets] = f"[bold]{item}[/bold]"

@@ -1,5 +1,5 @@
 import pathlib
-from utils import variables
+from app import config
 
 from utils import generic
 
@@ -7,8 +7,8 @@ from utils import generic
 # Main Functions
 # =======================================================================================
 def create_app_dir():
-    user_desktop = pathlib.Path.home() / variables.DESKTOP_DIR
-    app_dir = user_desktop / variables.APP_DIR
+    user_desktop = pathlib.Path.home() / config.DESKTOP_DIR
+    app_dir = user_desktop / config.APP_DIR
     app_dir.mkdir(parents=True, exist_ok=True)
     return app_dir
 
@@ -16,18 +16,18 @@ def create_app_dir():
 def create_default_dirs():
     app_path = generic.get_app_directory_path()
     
-    user_dir = app_path / variables.USERS_DIR
-    admin_dir = app_path / variables.ADMINS_DIR
+    user_dir = app_path / config.USERS_DIR
+    admin_dir = app_path / config.ADMINS_DIR
 
     dirs = [
-        user_dir / variables.USER_PROFILE_DIR,
-        user_dir / variables.USER_FILES_DIR,
-        user_dir / variables.USER_SEETING_DIR
+        user_dir / config.USER_PROFILE_DIR,
+        user_dir / config.USER_FILES_DIR,
+        user_dir / config.USER_SEETING_DIR
 ,
-        admin_dir / variables.LOGS_DIR,
-        admin_dir / variables.LOGS_DIR / variables.USER_ACTIVITY_LOGS_DIR,
-        admin_dir / variables.LOGS_DIR / variables.USER_SESSION_LOGS_DIR,
-        admin_dir / variables.LOGS_DIR / variables.USER_FEEDBACK_LOGS_DIR,
+        admin_dir / config.LOGS_DIR,
+        admin_dir / config.LOGS_DIR / config.USER_ACTIVITY_LOGS_DIR,
+        admin_dir / config.LOGS_DIR / config.USER_SESSION_LOGS_DIR,
+        admin_dir / config.LOGS_DIR / config.USER_FEEDBACK_LOGS_DIR,
     ]
 
     for dir in dirs:
