@@ -1,15 +1,10 @@
-import pathlib
-from ..app import config
+from datetime import datetime
 
 
 # Main Functions
 # =======================================================================================
-def get_app_directory_path():
-    return pathlib.Path.home() / config.DESKTOP_DIR / config.APP_DIR
 
-
-
-def build_menu_info(menu_items):
+def get_menu_info(menu_items):
     color_index = -1
     raw_menu = {}
     formated_menu = {}
@@ -22,11 +17,16 @@ def build_menu_info(menu_items):
         formated_menu[with_brackets] = f"[bold]{item}[/bold]"
         color_index -= 1
 
-    print(formated_menu)
-    print(raw_menu)
     return raw_menu, formated_menu
 
-
-from rich.console import Console
-Console().print('[[bold bright_cyan]C[/bold bright_cyan]]')
-build_menu_info(["Create", 'DELETE', 'UPDATE'])
+def get_files_info(path):
+    files_info = {}
+    for index, file in enumerate(path.iterdir(), start=1):
+        stats = file.stat()
+        files_info[index] = {
+            'name': file.name,
+            'size': str(stats.st_size),
+            'created': datetime.fromtimestamp(stats.st_birthtime).strftime("%Y-%m-%d %H:%M:%S"),
+            'updated': datetime.fromtimestamp(stats.st_mtime).strftime("%Y-%m-%d %H:%M:%S")
+        }
+    return files_info

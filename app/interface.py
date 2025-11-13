@@ -2,13 +2,15 @@ from rich.console import Console
 import rich
 from . import config
 import pathlib
-from datetime import datetime
+from utils import generic
+from prompt_toolkit import prompt
 
 
 class Interface:
     def __init__(self, user=None):
         self.screen = Console()
         self.user = user
+        self.file = None # TODO need file object here, and to track current selected or opened file
 
     def clear(self):
         self.screen.clear()
@@ -21,6 +23,7 @@ class Interface:
         self.show_header()
         for k, v in menu_info.items():
             self.screen.print(k,v)
+        self.screen.rule()
 
     def prompt_choice(self, menu_info):
         choice = self.screen.input("[bold blue3]Command: [/bold blue3]")
@@ -40,28 +43,52 @@ class Interface:
         table.add_column("Created", justify="right", style="green")
 
         self.user = "vivek" # TODO should be self.user.username
-        for idx, file in enumerate(pathlib.Path(str(config.USER_PERSONAL_FILES_PATH).format(self.user)).iterdir()):
-            modified_time = datetime.fromtimestamp(file.stat().st_mtime).strftime("%Y-%m-%d %H:%M:%S")
-            created_time = datetime.fromtimestamp(file.stat().st_birthtime).strftime("%Y-%m-%d %H:%M:%S")
-            table.add_row(f"{idx:4d}", str(file.name) , str(file.stat().st_size), modified_time, created_time)
+        users_files_path = pathlib.Path(str(config.USER_PERSONAL_FILES_PATH).format(self.user))
+        files_info = generic.get_files_info(users_files_path)
+
+        for index, file in files_info.items():
+            table.add_row(f"{index:4d}",file['name'] ,file['size'], file['updated'], file['created'])
         self.screen.print(table, justify="center")
 
 
 
     def prompt_file_choice(self):
-        pass
+        file_number = int(self.screen.input("Enter File Number To Open: "))
+        # TODO needs file number validation skipped for now
+        self.user = "vivek" # TODO should be self.user.username
+        users_files_path = pathlib.Path(str(config.USER_PERSONAL_FILES_PATH).format(self.user))
+        files_info = generic.get_files_info(users_files_path)
+        if file_number in files_info.keys():
+            self.screen.print(f"{files_info[file_number]['name']} Opened")
+            self.file = files_info[file_number]['name'] # TODO actually a file object not a string like this
+            return files_info[file_number]['name']
 
     def open_file_view(self):
-        pass
+        self.user = "vivek" # TODO should be self.user.username
+        file = pathlib.Path(str(config.USER_PERSONAL_FILES_PATH).format(self.user)) / self.file
+        existing_content = file.read_text()
+        text = prompt(
+            "Edit your note (Press Esc + Enter to finish):\n",
+            multiline=True,
+            default=existing_content
+        )
+        print("You WROTE:", text)
+        self.new_content = text
     
     def close_file_view(self):
-        pass
+        self.user = "vivek" # TODO should be self.user.username
+        file = pathlib.Path(str(config.USER_PERSONAL_FILES_PATH).format(self.user)) / self.file
+        file.write_text(self.new_content, encoding="utf-8")
 
 
 if __name__ == '__main__':
     # arg={'[[bold bright_cyan]C[/bold bright_cyan]]': '[bold]Create[/bold]', '[[bold bright_magenta]D[/bold bright_magenta]]': '[bold]DELETE[/bold]', '[[bold bright_blue]U[/bold bright_blue]]': '[bold]UPDATE[/bold]'}
     # Interface().display_menu(arg)
     # Interface().prompt_choice({'c': 'Create', 'D': 'DELETE', 'U': 'UPDATE'})
-    Interface().show_files()
+    interface = Interface()
+    interface.show_files()
+    interface.prompt_file_choice()
+    interface.open_file_view() # view and edit mode
+    interface.close_file_view() # update and save mode
 
     pass
