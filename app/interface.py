@@ -1,9 +1,11 @@
-from rich.console import Console
-import rich
-from . import config
 import pathlib
-from utils import generic
-from prompt_toolkit import prompt
+import rich
+import prompt_toolkit
+from rich.console import Console
+import util
+from app import config
+
+
 
 
 class Interface:
@@ -19,13 +21,13 @@ class Interface:
         self.clear()
         self.screen.rule("| PyCTSS |")
 
-    def display_menu(self, menu_info: dict):
+    def display_menu(self, menu_info: dict): # TODO Under maintenance
         self.show_header()
         for k, v in menu_info.items():
             self.screen.print(k,v)
         self.screen.rule()
 
-    def prompt_choice(self, menu_info):
+    def prompt_choice(self, menu_info: dict): # TODO Under maintenance
         choice = self.screen.input("[bold blue3]Command: [/bold blue3]")
         if choice.lower() in menu_info.keys():
             print("ok")
@@ -44,7 +46,7 @@ class Interface:
 
         self.user = "vivek" # TODO should be self.user.username
         users_files_path = pathlib.Path(str(config.USER_PERSONAL_FILES_PATH).format(self.user))
-        files_info = generic.get_files_info(users_files_path)
+        files_info = util.get_files_info(users_files_path)
 
         for index, file in files_info.items():
             table.add_row(f"{index:4d}",file['name'] ,file['size'], file['updated'], file['created'])
@@ -57,7 +59,7 @@ class Interface:
         # TODO needs file number validation skipped for now
         self.user = "vivek" # TODO should be self.user.username
         users_files_path = pathlib.Path(str(config.USER_PERSONAL_FILES_PATH).format(self.user))
-        files_info = generic.get_files_info(users_files_path)
+        files_info = util.get_files_info(users_files_path)
         if file_number in files_info.keys():
             self.screen.print(f"{files_info[file_number]['name']} Opened")
             self.file = files_info[file_number]['name'] # TODO actually a file object not a string like this
@@ -67,7 +69,7 @@ class Interface:
         self.user = "vivek" # TODO should be self.user.username
         file = pathlib.Path(str(config.USER_PERSONAL_FILES_PATH).format(self.user)) / self.file
         existing_content = file.read_text()
-        text = prompt(
+        text = prompt_toolkit.prompt(
             "Edit your note (Press Esc + Enter to finish):\n",
             multiline=True,
             default=existing_content
@@ -82,9 +84,9 @@ class Interface:
 
 
 if __name__ == '__main__':
-    # arg={'[[bold bright_cyan]C[/bold bright_cyan]]': '[bold]Create[/bold]', '[[bold bright_magenta]D[/bold bright_magenta]]': '[bold]DELETE[/bold]', '[[bold bright_blue]U[/bold bright_blue]]': '[bold]UPDATE[/bold]'}
-    # Interface().display_menu(arg)
-    # Interface().prompt_choice({'c': 'Create', 'D': 'DELETE', 'U': 'UPDATE'})
+    arg={'[[bold bright_cyan]C[/bold bright_cyan]]': '[bold]Create[/bold]', '[[bold bright_magenta]D[/bold bright_magenta]]': '[bold]DELETE[/bold]', '[[bold bright_blue]U[/bold bright_blue]]': '[bold]UPDATE[/bold]'}
+    Interface().display_menu(arg)
+    Interface().prompt_choice({'c': 'Create', 'D': 'DELETE', 'U': 'UPDATE'})
     interface = Interface()
     interface.show_files()
     interface.prompt_file_choice()
