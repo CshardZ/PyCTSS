@@ -1,16 +1,15 @@
 import pathlib
-import rich
+import rich.console
 import prompt_toolkit
-from rich.console import Console
 import util
-from app import config
+from . import config
 
 
 
 
 class Interface:
     def __init__(self, user=None):
-        self.screen = Console()
+        self.screen = rich.console.Console()
         self.user = user
         self.file = None # TODO need file object here, and to track current selected or opened file
 
@@ -84,6 +83,13 @@ class Interface:
 
 
 if __name__ == '__main__':
+
+
+
+
+
+
+
     arg={'[[bold bright_cyan]C[/bold bright_cyan]]': '[bold]Create[/bold]', '[[bold bright_magenta]D[/bold bright_magenta]]': '[bold]DELETE[/bold]', '[[bold bright_blue]U[/bold bright_blue]]': '[bold]UPDATE[/bold]'}
     Interface().display_menu(arg)
     Interface().prompt_choice({'c': 'Create', 'D': 'DELETE', 'U': 'UPDATE'})

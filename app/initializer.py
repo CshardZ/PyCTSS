@@ -1,9 +1,8 @@
 import pathlib
-from app import config
+import util
+from . import config
 
 
-# Main Functions
-# =======================================================================================
 def create_app_dir():
     user_desktop = pathlib.Path.home() / config.DESKTOP_DIR
     app_dir = user_desktop / config.APP_DIR
@@ -12,7 +11,7 @@ def create_app_dir():
 
 
 def create_default_dirs():
-    app_path = generic.get_app_directory_path()
+    app_path = util.get_app_directory_path() #TODO NotImplemented
     
     user_dir = app_path / config.USERS_DIR
     admin_dir = app_path / config.ADMINS_DIR
@@ -31,8 +30,7 @@ def create_default_dirs():
     for dir in dirs:
         dir.mkdir(parents=True, exist_ok=True)
 
-# Testing
-# =======================================================================================
+
 if __name__ == '__main__':
     create_app_dir()
     create_default_dirs()
