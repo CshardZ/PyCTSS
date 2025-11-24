@@ -8,30 +8,37 @@ from . import config
 
 
 class Interface:
+
+    RICH_PROMPT = "[bold blue3]Command: [/bold blue3]"
+    HEADING = "| PyCTSS |"
+
     def __init__(self, user=None):
         self.screen = rich.console.Console()
         self.user = user
-        self.file = None # TODO need file object here, and to track current selected or opened file
+        self.file = None  # TODO: track current selected file
 
     def clear(self):
         self.screen.clear()
 
     def show_header(self):
         self.clear()
-        self.screen.rule("| PyCTSS |")
+        self.screen.rule(self.HEADING)
 
-    def display_menu(self, menu_info: dict): # TODO Under maintenance
+    def show_menu(self, options):
         self.show_header()
-        for k, v in menu_info.items():
-            self.screen.print(k,v)
+        menu = util.build_menu_info(options)
+        for command, option in menu.items():
+            self.screen.print(command, option)
         self.screen.rule()
 
-    def prompt_choice(self, menu_info: dict): # TODO Under maintenance
-        choice = self.screen.input("[bold blue3]Command: [/bold blue3]")
-        if choice.lower() in menu_info.keys():
-            print("ok")
-        else:
-            print("invalid choice")
+    def prompt_command(self, options):
+        commands = util.get_commands_for(options)
+        command = self.screen.input(self.RICH_PROMPT).strip().upper()
+
+        if command in commands:
+            return command
+
+
 
     def show_files(self):
         self.show_header()
@@ -90,13 +97,12 @@ if __name__ == '__main__':
 
 
 
-    arg={'[[bold bright_cyan]C[/bold bright_cyan]]': '[bold]Create[/bold]', '[[bold bright_magenta]D[/bold bright_magenta]]': '[bold]DELETE[/bold]', '[[bold bright_blue]U[/bold bright_blue]]': '[bold]UPDATE[/bold]'}
-    Interface().display_menu(arg)
-    Interface().prompt_choice({'c': 'Create', 'D': 'DELETE', 'U': 'UPDATE'})
-    interface = Interface()
-    interface.show_files()
-    interface.prompt_file_choice()
-    interface.open_file_view() # view and edit mode
-    interface.close_file_view() # update and save mode
+    Interface().show_menu(["Create", "Delete", "Update", "Read"])
+    # Interface().prompt_choice({'c': 'Create', 'D': 'DELETE', 'U': 'UPDATE'})
+    # interface = Interface()
+    # interface.show_files()
+    # interface.prompt_file_choice()
+    # interface.open_file_view() # view and edit mode
+    # interface.close_file_view() # update and save mode
 
     pass
