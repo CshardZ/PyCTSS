@@ -3,6 +3,8 @@ import rich.console
 import prompt_toolkit
 import util
 from . import config
+import time
+import random
 
 
 
@@ -12,17 +14,37 @@ class Interface:
     RICH_PROMPT = "[bold blue3]Command: [/bold blue3]"
     HEADING = "| PyCTSS |"
 
-    def __init__(self, user=None):
+    def __init__(self, user="ANONYMOUS"):
         self.screen = rich.console.Console()
         self.user = user
         self.file = None  # TODO: track current selected file
 
-    def clear(self):
+    def clear_screen(self):
         self.screen.clear()
 
     def show_header(self):
-        self.clear()
+        self.clear_screen()
         self.screen.rule(self.HEADING)
+
+    def show_splash_screen(self):
+        def draw(progress): #TODO can move this to util or ... app_util?
+            bar = ("░" * progress).ljust(100)
+            self.clear_screen()
+            self.screen.print("\n" * 10)
+            self.screen.print(util.LOGO, justify="center")
+            self.screen.print(f"0 |{bar}| 100", justify="center")
+
+        loading = 0
+        steps = [10, 20, 30]
+        while loading < 100:
+            draw(loading)
+            time.sleep(1)
+            loading += random.choice(steps)
+
+        draw(100)
+        self.screen.print("\nPLEASE WAIT", justify="center")
+        time.sleep(3)
+
 
     def show_menu(self, options):
         self.show_header()
@@ -34,7 +56,6 @@ class Interface:
     def prompt_command(self, options):
         commands = util.get_commands_for(options)
         command = self.screen.input(self.RICH_PROMPT).strip().upper()
-
         if command in commands:
             return command
 
@@ -50,7 +71,6 @@ class Interface:
         table.add_column("Updated", justify="right", style="green")
         table.add_column("Created", justify="right", style="green")
 
-        self.user = "vivek" # TODO should be self.user.username
         users_files_path = pathlib.Path(str(config.USER_PERSONAL_FILES_PATH).format(self.user))
         files_info = util.get_files_info(users_files_path)
 
@@ -63,7 +83,6 @@ class Interface:
     def prompt_file_choice(self):
         file_number = int(self.screen.input("Enter File Number To Open: "))
         # TODO needs file number validation skipped for now
-        self.user = "vivek" # TODO should be self.user.username
         users_files_path = pathlib.Path(str(config.USER_PERSONAL_FILES_PATH).format(self.user))
         files_info = util.get_files_info(users_files_path)
         if file_number in files_info.keys():
@@ -89,20 +108,16 @@ class Interface:
         file.write_text(self.new_content, encoding="utf-8")
 
 
-if __name__ == '__main__':
 
 
+class UserInterface(Interface):
+    def start(self):
+        self.show_splash_screen()
+
+class AdminInterface(Interface):
+    def start(self):
+        self.show_splash_screen()
 
 
-
-
-
-    Interface().show_menu(["Create", "Delete", "Update", "Read"])
-    # Interface().prompt_choice({'c': 'Create', 'D': 'DELETE', 'U': 'UPDATE'})
-    # interface = Interface()
-    # interface.show_files()
-    # interface.prompt_file_choice()
-    # interface.open_file_view() # view and edit mode
-    # interface.close_file_view() # update and save mode
-
-    pass
+Interface().show_splash_screen()
+Interface().show_menu()

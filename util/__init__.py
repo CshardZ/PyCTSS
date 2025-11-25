@@ -20,8 +20,8 @@ def get_files_info(path):
         files_info[index] = {
             'name': file.name,
             'size': str(stats.st_size),
-            'created': datetime.fromtimestamp(stats.st_birthtime).strftime("%Y-%m-%d %H:%M:%S"),
-            'updated': datetime.fromtimestamp(stats.st_mtime).strftime("%Y-%m-%d %H:%M:%S")
+            'created': datetime.fromtimestamp(stats.st_birthtime).strftime("%Y.%m.%d %H:%M:%S"),
+            'updated': datetime.fromtimestamp(stats.st_mtime).strftime("%Y.%m.%d %H:%M:%S")
         }
     return files_info
 
@@ -41,3 +41,25 @@ def build_menu_info(options):
 
 def get_commands_for(options):
     return [option.upper() for option in options] #TODO adding only unique command, ex: Create, Cut would conflict!
+
+
+
+
+
+
+
+
+
+LOGO = """ 
+███████████               █████████  ███████████  █████████   █████████ 
+░░███░░░░░███             ███░░░░░███░█░░░███░░░█ ███░░░░░███ ███░░░░░███
+ ░███    ░███ █████ ████ ███     ░░░ ░   ░███  ░ ░███    ░░░ ░███    ░░░ 
+ ░██████████ ░░███ ░███ ░███             ░███    ░░█████████ ░░█████████ 
+ ░███░░░░░░   ░███ ░███ ░███             ░███     ░░░░░░░░███ ░░░░░░░░███
+ ░███         ░███ ░███ ░░███     ███    ░███     ███    ░███ ███    ░███
+ █████        ░░███████  ░░█████████     █████   ░░█████████ ░░█████████ 
+░░░░░          ░░░░░███   ░░░░░░░░░     ░░░░░     ░░░░░░░░░   ░░░░░░░░░  
+...............███ ░███..................................................                                                  
+..............░░██████...................................................
+...............░░░░░░....................................................
+"""

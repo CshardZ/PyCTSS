@@ -12,7 +12,7 @@ class CTSSServer:
     def start(self):
         self.sock.bind((self.ip, 5000))
         self.sock.listen()
-        print("Server Started, now listening...")
+        print(self.ip,"Server Started, now listening...")
 
     def stop(self):
         self.sock.close()
