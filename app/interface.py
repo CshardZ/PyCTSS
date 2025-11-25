@@ -1,19 +1,16 @@
 import pathlib
-import rich.console
+import rich.console, rich.prompt
 import prompt_toolkit
-import util
+from . import app_util
 from . import config
 import time
 import random
+import enum
 
 
 
 
 class Interface:
-
-    RICH_PROMPT = "[bold blue3]Command: [/bold blue3]"
-    HEADING = "| PyCTSS |"
-
     def __init__(self, user="ANONYMOUS"):
         self.screen = rich.console.Console()
         self.user = user
@@ -24,14 +21,14 @@ class Interface:
 
     def show_header(self):
         self.clear_screen()
-        self.screen.rule(self.HEADING)
+        self.screen.rule(config.APP_NAME)
 
     def show_splash_screen(self):
         def draw(progress): #TODO can move this to util or ... app_util?
             bar = ("░" * progress).ljust(100)
             self.clear_screen()
             self.screen.print("\n" * 10)
-            self.screen.print(util.LOGO, justify="center")
+            self.screen.print(config.APP_LOGO, justify="center")
             self.screen.print(f"0 |{bar}| 100", justify="center")
 
         loading = 0
@@ -45,6 +42,11 @@ class Interface:
         self.screen.print("\nPLEASE WAIT", justify="center")
         time.sleep(3)
 
+    def show_login(self):
+        self.show_header()
+        username = rich.prompt.Prompt.ask("Username")
+        password = rich.prompt.Prompt.ask("Password", password=True)
+        return username, password
 
     def show_menu(self, options):
         self.show_header()
@@ -55,7 +57,7 @@ class Interface:
 
     def prompt_command(self, options):
         commands = util.get_commands_for(options)
-        command = self.screen.input(self.RICH_PROMPT).strip().upper()
+        command = self.screen.input(config.PROMPT_STYLE).strip().upper()
         if command in commands:
             return command
 
@@ -114,10 +116,6 @@ class UserInterface(Interface):
     def start(self):
         self.show_splash_screen()
 
-class AdminInterface(Interface):
+class AdminInterface(Interface): #TODO email everytime admin logs in
     def start(self):
         self.show_splash_screen()
-
-
-Interface().show_splash_screen()
-Interface().show_menu()

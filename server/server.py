@@ -3,11 +3,10 @@ import socket
 
 
 class CTSSServer:
-    def __init__(self): # TODO enforce TEXT or FILE mode, can use ENUMs here if suitable
+    def __init__(self):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.host = socket.gethostname()
         self.ip = socket.gethostbyname(self.host)
-        self.mode = None
 
     def start(self):
         self.sock.bind((self.ip, 5000))
@@ -23,7 +22,10 @@ class CTSSServer:
         client, address = self.sock.accept()
         return client, address
 
-    def handle_client(self, client):
+    def receive(self, client):
         # TODO Implement length prefixed framming for message transmission
         data = client.recv(1024).decode('utf-8')
         print(data)
+
+    def send(self):
+        pass
