@@ -2,3 +2,14 @@
 
 
 practice.py
+practice/
+
+.vscode/
+
+app/__pycache__/
+
+util/__pycache__/
+
+server/__pycache__/
+
+client/__pycache__/

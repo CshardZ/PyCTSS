@@ -34,36 +34,42 @@ PyCTSS
 """
 
 
-SERVER_USER_HOME_PATH = pathlib.Path.home()
+SYSTEM_USER_PATH = pathlib.Path.home()
+SYSTEM_USER_DESKTOP_PATH = SYSTEM_USER_PATH / "Desktop"
 
-SERVER_USER_DESKTOP_DIR_NAME = "Desktop"
-SERVER_USER_DESKTOP_PATH = SERVER_USER_HOME_PATH / SERVER_USER_DESKTOP_DIR_NAME
+APP_NAME = "PyCTSS"
+APP_BASE_PATH = SYSTEM_USER_DESKTOP_PATH / APP_NAME
 
-APP_BASE_DIR_NAME = "PyCTSS"
-APP_BASE_PATH = SERVER_USER_DESKTOP_PATH / APP_BASE_DIR_NAME
+ALL_USERS_PATH = APP_BASE_PATH / "USERS"
+ALL_ADMINS_PATH = APP_BASE_PATH / "ADMINS"
 
-ALL_USERS_DIR_NAME = "Users"
-APP_USERS_PATH = APP_BASE_PATH / ALL_USERS_DIR_NAME
-
-ALL_ADMINS_DIR_NAME = "Admins"
-APP_ADMINS_PATH = APP_BASE_PATH / ALL_ADMINS_DIR_NAME
-
-USER_PERSONAL_DIR_NAME = "{}"
-USER_PERSONAL_PATH = APP_USERS_PATH / USER_PERSONAL_DIR_NAME
-
-ADMIN_PERSONAL_DIR_NAME = "{}"
-ADMIN_PERSONAL_PATH = APP_ADMINS_PATH / ADMIN_PERSONAL_DIR_NAME
-
-USER_PERSONAL_FILES_DIR_NAME = "Files"
-USER_PERSONAL_PROFILE_DIR_NAME = "Profile"
-USER_PERSONAL_SETTING_DIR_NAME = "Setting"
-
-USER_PERSONAL_FILES_PATH = USER_PERSONAL_PATH / USER_PERSONAL_FILES_DIR_NAME
-USER_PERSONAL_PROFILE_PATH = USER_PERSONAL_PATH / USER_PERSONAL_PROFILE_DIR_NAME
-USER_PERSONAL_SETTING_PATH = USER_PERSONAL_PATH / USER_PERSONAL_SETTING_DIR_NAME
+USER_PERSONAL_PATH = ALL_USERS_PATH / "{}"
+ADMIN_PERSONAL_PATH = ALL_ADMINS_PATH / "{}"
+USER_FILES_PATH = USER_PERSONAL_PATH / "Files"
 
 
 
+RICH_STANDARD_COLORS = [
+    "bright_blue", "bright_magenta", "bright_cyan"
+    "bright_red", "bright_green", "bright_yellow",
+    "black", "red", "green", "yellow", "blue",
+    "magenta", "cyan", "white", "bright_black",
+]
 
+PROMPT_STYLE = "[bold blue3]Command: [/bold blue3]"
 
-RICH_COLORS = ["bright_red", "bright_green", "bright_yellow", "bright_blue", "bright_magenta", "bright_cyan"]
+APP_LOGO = """
+
+███████████               █████████   ███████████  █████████   █████████ 
+░░███░░░░░███            ███░░░░░███░░█░░░███░░░█ ███░░░░░███ ███░░░░░███
+ ░███    ░███ █████ ████ ███     ░░░ ░   ░███  ░ ░███    ░░░ ░███    ░░░ 
+ ░██████████ ░░███ ░███ ░███             ░███    ░░█████████ ░░█████████ 
+ ░███░░░░░░   ░███ ░███ ░███             ░███     ░░░░░░░░███ ░░░░░░░░███
+ ░███         ░███ ░███ ░░███     ███    ░███     ███    ░███ ███    ░███
+ █████        ░░███████  ░░█████████     █████   ░░█████████ ░░█████████ 
+░░░░░          ░░░░░███   ░░░░░░░░░     ░░░░░     ░░░░░░░░░   ░░░░░░░░░  
+...............███ ░███..................................................                                                  
+..............░░██████...................................................
+...............░░░░░░....................................................
+
+"""

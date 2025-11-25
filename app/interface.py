@@ -1,36 +1,67 @@
-from rich.console import Console
-import rich
-from . import config
 import pathlib
-from utils import generic
-from prompt_toolkit import prompt
+import rich.console, rich.prompt
+import prompt_toolkit
+from . import app_util
+from . import config
+import time
+import random
+import enum
+
+
 
 
 class Interface:
-    def __init__(self, user=None):
-        self.screen = Console()
+    def __init__(self, user="ANONYMOUS"):
+        self.screen = rich.console.Console()
         self.user = user
-        self.file = None # TODO need file object here, and to track current selected or opened file
+        self.file = None  # TODO: track current selected file
 
-    def clear(self):
+    def clear_screen(self):
         self.screen.clear()
 
     def show_header(self):
-        self.clear()
-        self.screen.rule("| PyCTSS |")
+        self.clear_screen()
+        self.screen.rule(config.APP_NAME)
 
-    def display_menu(self, menu_info: dict):
+    def show_splash_screen(self):
+        def draw(progress): #TODO can move this to util or ... app_util?
+            bar = ("░" * progress).ljust(100)
+            self.clear_screen()
+            self.screen.print("\n" * 10)
+            self.screen.print(config.APP_LOGO, justify="center")
+            self.screen.print(f"0 |{bar}| 100", justify="center")
+
+        loading = 0
+        steps = [10, 20, 30]
+        while loading < 100:
+            draw(loading)
+            time.sleep(1)
+            loading += random.choice(steps)
+
+        draw(100)
+        self.screen.print("\nPLEASE WAIT", justify="center")
+        time.sleep(3)
+
+    def show_login(self):
         self.show_header()
-        for k, v in menu_info.items():
-            self.screen.print(k,v)
+        username = rich.prompt.Prompt.ask("Username")
+        password = rich.prompt.Prompt.ask("Password", password=True)
+        return username, password
+
+    def show_menu(self, options):
+        self.show_header()
+        menu = util.build_menu_info(options)
+        for command, option in menu.items():
+            self.screen.print(command, option)
         self.screen.rule()
 
-    def prompt_choice(self, menu_info):
-        choice = self.screen.input("[bold blue3]Command: [/bold blue3]")
-        if choice.lower() in menu_info.keys():
-            print("ok")
-        else:
-            print("invalid choice")
+    def prompt_command(self, options):
+        commands = util.get_commands_for(options)
+        command = self.screen.input(config.PROMPT_STYLE).strip().upper()
+        if command in commands:
+            return command
+
+
 
     def show_files(self):
         self.show_header()
@@ -42,9 +73,8 @@ class Interface:
         table.add_column("Updated", justify="right", style="green")
         table.add_column("Created", justify="right", style="green")
 
-        self.user = "vivek" # TODO should be self.user.username
         users_files_path = pathlib.Path(str(config.USER_PERSONAL_FILES_PATH).format(self.user))
-        files_info = generic.get_files_info(users_files_path)
+        files_info = util.get_files_info(users_files_path)
 
         for index, file in files_info.items():
             table.add_row(f"{index:4d}",file['name'] ,file['size'], file['updated'], file['created'])
@@ -55,9 +85,8 @@ class Interface:
     def prompt_file_choice(self):
         file_number = int(self.screen.input("Enter File Number To Open: "))
         # TODO needs file number validation skipped for now
-        self.user = "vivek" # TODO should be self.user.username
         users_files_path = pathlib.Path(str(config.USER_PERSONAL_FILES_PATH).format(self.user))
-        files_info = generic.get_files_info(users_files_path)
+        files_info = util.get_files_info(users_files_path)
         if file_number in files_info.keys():
             self.screen.print(f"{files_info[file_number]['name']} Opened")
             self.file = files_info[file_number]['name'] # TODO actually a file object not a string like this
@@ -67,7 +96,7 @@ class Interface:
         self.user = "vivek" # TODO should be self.user.username
         file = pathlib.Path(str(config.USER_PERSONAL_FILES_PATH).format(self.user)) / self.file
         existing_content = file.read_text()
-        text = prompt(
+        text = prompt_toolkit.prompt(
             "Edit your note (Press Esc + Enter to finish):\n",
             multiline=True,
             default=existing_content
@@ -81,14 +110,12 @@ class Interface:
         file.write_text(self.new_content, encoding="utf-8")
 
 
-if __name__ == '__main__':
-    # arg={'[[bold bright_cyan]C[/bold bright_cyan]]': '[bold]Create[/bold]', '[[bold bright_magenta]D[/bold bright_magenta]]': '[bold]DELETE[/bold]', '[[bold bright_blue]U[/bold bright_blue]]': '[bold]UPDATE[/bold]'}
-    # Interface().display_menu(arg)
-    # Interface().prompt_choice({'c': 'Create', 'D': 'DELETE', 'U': 'UPDATE'})
-    interface = Interface()
-    interface.show_files()
-    interface.prompt_file_choice()
-    interface.open_file_view() # view and edit mode
-    interface.close_file_view() # update and save mode
 
-    pass
+
+class UserInterface(Interface):
+    def start(self):
+        self.show_splash_screen()
+
+class AdminInterface(Interface): #TODO email everytime admin logs in
+    def start(self):
+        self.show_splash_screen()
