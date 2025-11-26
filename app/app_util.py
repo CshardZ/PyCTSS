@@ -1,6 +1,7 @@
 from datetime import datetime
 import itertools
 from . import config
+import rich
 
 
 def create_base_dirs():
@@ -12,13 +13,19 @@ def create_base_dirs():
         dir.mkdir(parents=True, exist_ok=True)
 
 
+def build_rich_table(cols): #TODO need colors to columns
+    table = rich.table.Table()
+    for col in cols:
+        table.add_column(col)
+    return table
+
 def get_files_info(path):
     files_info = {}
     for index, file in enumerate(path.iterdir(), start=1):
         stats = file.stat()
         files_info[index] = {
             'name': file.name,
-            'size': str(stats.st_size),
+            'size': f"{stats.st_size // 1024} Kb",
             'created': datetime.fromtimestamp(stats.st_birthtime).strftime("%Y.%m.%d %H:%M:%S"),
             'updated': datetime.fromtimestamp(stats.st_mtime).strftime("%Y.%m.%d %H:%M:%S")
         }
@@ -40,6 +47,18 @@ def build_menu_info(options):
 def get_commands_for(options):
     return [option.upper() for option in options] #TODO adding only unique command, ex: Create, Cut would conflict!
 
+
+def bread_crumbs_for(path):
+    parts = path.parts
+
+    if "ADMINS" in parts:
+        start = parts.index("ADMINS")
+    elif "USERS" in parts:
+        start = parts.index("USERS")
+    else:
+        start = 0
+
+    return "lan.pyctss.app > " + " > ".join(parts[start:])
 
 
 

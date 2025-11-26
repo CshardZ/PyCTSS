@@ -12,20 +12,30 @@ def setup():
         pass
 
 def start():
+    # TODO !important Have to start the central server first!
     interface = Interface()
     interface.show_splash_screen()
-    credentials = interface.show_login()
+    credentials = interface.prompt_login_credentials()
     verified, role = CTSSUser.authenticate(credentials)
     if verified:
         if role == Role.ADMIN:
-            return AdminInterface()
+            admin_user = CTSSUser(credentials, role)
+            return AdminInterface(admin_user)
         if role == Role.USER:
-            print(role)
-            return UserInterface()
+            normal_user = CTSSUser(credentials, role)
+            return UserInterface(normal_user)
         if role == Role.ANONYMOUS:
             raise PermissionError("Access Denied: Role Unidentified")
     
     raise PermissionError("Access Denied: Verfication Unsuccessfull")
 
 
-start()
+def work(userinterface):
+    userinterface.show_files()
+    userinterface.prompt_file_choice()
+    userinterface.open_file_view()
+    userinterface.close_file_view()
+
+setup()
+userinterface = start()
+work(userinterface)

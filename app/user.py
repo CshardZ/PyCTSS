@@ -8,8 +8,10 @@ class Role(enum.Enum):
     ANONYMOUS = "ROLE=ANONYMOUS"
 
 class CTSSUser:
-    def __init__(self, credentials):
-        self.__username, self.__password = credentials 
+    def __init__(self, credentials, role):
+        self.username = credentials[0] 
+        self.__password = credentials[1]
+        self.role = role
 
     @staticmethod
     def authenticate(credentials):
