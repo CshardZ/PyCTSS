@@ -38,14 +38,14 @@ def build_menu_info(options):
     for option in options:
         command = option[0].upper()
         color = next(color_cycle)
-        formatted_command = f"[[bold {color}]{command}[/bold {color}]]"
-        formatted_option = f"[bold]{option}[/bold]"
+        formatted_command = f"[bold {color}]{command}[/bold {color}] -"
+        formatted_option = f"{option}"
         menu[formatted_command] = formatted_option
     return menu
     
 
 def get_commands_for(options):
-    return [option.upper() for option in options] #TODO adding only unique command, ex: Create, Cut would conflict!
+    return {option[0].upper():option for option in options} #TODO adding only unique command, ex: Create, Cut would conflict!
 
 
 def bread_crumbs_for(path):

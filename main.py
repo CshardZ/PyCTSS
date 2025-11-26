@@ -5,7 +5,6 @@ from app import app_util
 from app.interface import Interface, UserInterface, AdminInterface
 from app.user import CTSSUser, Role
 
-
 def setup():
     app_util.create_base_dirs()
     if not util.app_base_dir_exists():
@@ -15,6 +14,7 @@ def start():
     # TODO !important Have to start the central server first!
     interface = Interface()
     interface.show_splash_screen()
+    print("START")
     credentials = interface.prompt_login_credentials()
     verified, role = CTSSUser.authenticate(credentials)
     if verified:
@@ -31,10 +31,7 @@ def start():
 
 
 def work(userinterface):
-    userinterface.show_files()
-    userinterface.prompt_file_choice()
-    userinterface.open_file_view()
-    userinterface.close_file_view()
+    userinterface.home()
 
 setup()
 userinterface = start()

@@ -15,16 +15,18 @@ class Interface:
         self.current_path = pathlib.Path("")
         if self.user:
             #TODO should change as user interacts with console
-            self.current_path = pathlib.Path(str(config.USER_FILES_PATH).format(self.user.username))
+            self.current_path = pathlib.Path(str(config.USER_PERSONAL_PATH).format(self.user.username))
 
     def clear_screen(self):
         self.screen.clear()
 
     def show_header(self):
         self.clear_screen()
-        self.screen.rule(config.APP_NAME)
+        self.screen.rule(f"[bold]{config.APP_NAME}[/bold]")
         self.screen.print(app_util.bread_crumbs_for(self.current_path))
         self.screen.rule()
+        self.screen.print("\n\n")
+        
 
     def show_splash_screen(self):
         def draw(progress): #TODO can move this to util or ... app_util?
@@ -45,18 +47,18 @@ class Interface:
         self.screen.print("\nPLEASE WAIT", justify="center")
         time.sleep(3)
 
-    def show_menu(self, options):
-        self.show_header()
+    def choose_from_menu(self, options):
+        self.screen.print("[bold blue]Choose From Menu[/bold blue]")
+        self.screen.rule(characters="-", style="grey")
+
         menu = app_util.build_menu_info(options)
         for command, option in menu.items():
             self.screen.print(command, option)
-        self.screen.rule()
-
-    def prompt_command(self, options):
+        self.screen.rule(style="grey")
         commands = app_util.get_commands_for(options)
         command = self.screen.input(config.PROMPT_STYLE).strip().upper()
         if command in commands:
-            return command
+            return commands[command]
 
     def prompt_login_credentials(self):
         self.show_header()
@@ -64,7 +66,7 @@ class Interface:
         password = rich.prompt.Prompt.ask("Password", password=True)
         return username, password #TODO Must return hashed password, build a custom hashing function with salting
 
-    def show_files(self):
+    def open_file_explorer(self):
         self.show_header()
         files_table = app_util.build_rich_table(["File Number", "File Name", "Size", "Created", "Updated"])
         files_info = app_util.get_files_info(self.current_path)
@@ -76,33 +78,11 @@ class Interface:
         self.screen.print(files_table, justify="center")
 
 
-    def prompt_file_choice(self):
-        file_number = int(self.screen.input("Enter File Number To Open: "))
-        # TODO needs file number validation skipped for now
-        files_info = app_util.get_files_info(self.current_path)
-        if file_number in files_info:
-            self.file = files_info[file_number]['name']
-            self.screen.print(f"{files_info[file_number]['name']} Opened")
+    def choose_from_files(self):
+        file_name = rich.prompt.Prompt.ask("Enter File Name with Extension: ")
+        return file_name
 
 
-    def open_file_view(self):
-        self.current_path = self.current_path / self.file
-        self.show_header()
-        self.file = file.File(self.current_path)
-        self.file.open()
-        self.file.edit()    
-
-    def close_file_view(self):
-        save = rich.prompt.Prompt.ask("Save file (y or n): ")
-        if save == 'y':
-            self.file.save()
-            self.screen.print("File Saved")
-        else:
-            self.screen.print("File Not Saved")
-        self.screen.print("Please wait...")
-        time.sleep(3)
-        self.clear_screen()
-        #TODO move main view to self.current_path
 
 class AdminInterface(Interface): #TODO email everytime admin logs in
     """
@@ -138,18 +118,69 @@ class UserInterface(Interface):
         - Report/Feedback/Contact to admins
     """
 
-    def __init__(self, user):
+    def __init__(self, user=None):
         super().__init__(user)
         self.user = user
 
 
+    def home(self):
+        self.show_header()
+        choice = self.choose_from_menu([
+            "Files",
+            "Shared",
+            "Contact",
+            "Profile",
+        ])
+        if not choice is None:
+            self.current_path = self.current_path / choice
+
+        if choice == "Files":
+            self.open_file_explorer()
+
+    def open_file_explorer(self):
+        super().open_file_explorer()
+        choice = self.choose_from_menu([
+            "Create File",
+            "Open File",
+            "Delete File",
+        ]).lower()
+
+        if choice == 'create file':
+            self.create_file()
+        elif choice == 'open file':
+            self.edit_file()
+        elif choice == 'delete file':
+            self.delete_file()
 
     def create_file(self):
-        pass
+        file_name = rich.prompt.Prompt.ask("Enter Filename With Extensoin: ")
+        file_name = '_'.join(file_name.split(' '))
+        (self.current_path / file_name).touch()
+
     def edit_file(self):
-        pass
+        file_name = self.choose_from_files()
+        self.current_path = self.current_path / file_name
+        self.file = file.File(self.current_path)
+        self.show_header()
+        self.file.open()
+        self.file.edit()    
+
+        save = rich.prompt.Prompt.ask("Save file (y or n): ")
+        if save == 'y':
+            self.file.save()
+            self.screen.print("File Saved")
+        else:
+            self.screen.print("File Not Saved")
+        self.screen.print("Please wait...")
+        self.current_path = self.current_path.parent
+        time.sleep(3)
+        self.clear_screen()
+
     def delete_file(self):
-        pass
+        file_name = rich.prompt.Prompt.ask("Enter Filename With Extensoin: ")
+        file_name = '_'.join(file_name.split(' '))
+        (self.current_path / file_name).unlink()
+
     def send_message(self):
         pass
     def receive_message(self):
