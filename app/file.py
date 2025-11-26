@@ -1,4 +1,6 @@
-import prompt_toolkit
+from prompt_toolkit import prompt
+from prompt_toolkit.document import Document
+
 
 
 class File:
@@ -14,8 +16,12 @@ class File:
     def open(self):
         self.existing_content = self.file.read_text()
 
+    def view(self):
+        doc = Document(text=self.existing_content)
+        prompt("Read-only note (press Enter):\n", default=doc)
+
     def edit(self):
-        self.new_content = prompt_toolkit.prompt(
+        self.new_content = prompt(
             "Edit your note (Press Esc + Enter to finish):\n",
             multiline=True,
             default=self.existing_content

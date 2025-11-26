@@ -8,9 +8,22 @@ def create_base_dirs():
     dirs = [
         config.APP_BASE_PATH / config.ALL_USERS_PATH,
         config.APP_BASE_PATH / config.ALL_ADMINS_PATH,
+        config.ADMIN_CREDENTIALS_REGISTRY_PATH,
     ]
     for dir in dirs:
         dir.mkdir(parents=True, exist_ok=True)
+
+
+def create_new_user_dirs(username):
+    dirs = [
+        config.ALL_USERS_PATH / username / "Files",
+    ]
+    for dir in dirs:
+        dir.mkdir(parents=True, exist_ok=True)
+
+def store_user_credentials(username, password):
+    #TODO has the password then store
+    pass
 
 
 def build_rich_table(cols): #TODO need colors to columns

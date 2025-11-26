@@ -17,5 +17,6 @@ class CTSSUser:
     def authenticate(credentials):
         username, password = credentials
         if username == "vivek" and password == "vivek":
-            return True, Role.USER
+            # return True, Role.USER
+            return True, Role.ADMIN
         return False, Role.ANONYMOUS

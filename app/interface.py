@@ -8,22 +8,17 @@ from . import file
 
 
 class Interface:
-    def __init__(self, user=None):
+    def __init__(self):
         self.screen = rich.console.Console()
         self.file: file.File
-        self.user = user
-        self.current_path = pathlib.Path("")
-        if self.user:
-            #TODO should change as user interacts with console
-            self.current_path = pathlib.Path(str(config.USER_PERSONAL_PATH).format(self.user.username))
 
     def clear_screen(self):
         self.screen.clear()
 
-    def show_header(self):
+    def show_header(self, path=pathlib.Path()):
         self.clear_screen()
         self.screen.rule(f"[bold]{config.APP_NAME}[/bold]")
-        self.screen.print(app_util.bread_crumbs_for(self.current_path))
+        self.screen.print(app_util.bread_crumbs_for(path))
         self.screen.rule()
         self.screen.print("\n\n")
         
@@ -66,10 +61,10 @@ class Interface:
         password = rich.prompt.Prompt.ask("Password", password=True)
         return username, password #TODO Must return hashed password, build a custom hashing function with salting
 
-    def open_file_explorer(self):
+    def open_file_explorer(self, path):
         self.show_header()
         files_table = app_util.build_rich_table(["File Number", "File Name", "Size", "Created", "Updated"])
-        files_info = app_util.get_files_info(self.current_path)
+        files_info = app_util.get_files_info(path)
 
         for index, details in files_info.items():
             index = f"{index:4d}"
@@ -79,48 +74,88 @@ class Interface:
 
 
     def choose_from_files(self):
-        file_name = rich.prompt.Prompt.ask("Enter File Name with Extension: ")
+        file_name = rich.prompt.Prompt.ask("Enter File Name with Extension")
         return file_name
 
 
 
 class AdminInterface(Interface): #TODO email everytime admin logs in
-    """
-    Admin Tasks:
-         - Create/Delete normal user
-         - Create/Delete admin user
-         - View Files(logs, user activities, sessions, tresspassing etc)
-         - Server setting - don't know
-    """
+    def __init__(self, user):
+        super().__init__()
+        self.user = user
+        self.current_path = config.ALL_ADMINS_PATH
+        self.file: file.File
     
+
+    def home(self):
+        self.show_header(self.current_path)
+        choice = self.choose_from_menu([
+            "Credentials-Registry",
+            "Manage-Users",
+        ])
+
+        if not choice is None:
+            self.current_path = self.current_path / choice
+        if choice == "Credentials-Registry":
+            self.open_file_explorer()
+        elif choice == "Manage-Users":
+            self.open_manage_users()
+
+        self.current_path = self.current_path.parent
+
+
+    def open_manage_users(self):
+        choice = self.choose_from_menu([
+            "Create User",
+            "Delete User",
+        ])
+
+        if choice == "Create User":
+            self.create_normal_user()
+        elif choice == "Delete User":
+            self.delete_normal_user()
+
+
     def create_normal_user(self):
-        pass
+        new_username = rich.prompt.Prompt.ask("New Username")
+        new_password = rich.prompt.Prompt.ask("New Password", password=True)
+        confirm_password = rich.prompt.Prompt.ask("Confirm Password", password=True)
+        app_util.create_new_user_dirs(new_username)
+        app_util.store_user_credentials(new_username, new_password)
 
-    def create_admin_user(self):
-        pass
-    
+
     def delete_normal_user(self):
-        pass
+        username = rich.prompt.Prompt.ask("New Username")
+        import shutil
+        shutil.rmtree(config.ALL_USERS_PATH / username)
 
-    def delete_admin_user(self):
-        pass
 
-    def read_file(self):
-        pass
+    def open_file_explorer(self):
+        super().open_file_explorer(self.current_path)
+        file_name = self.choose_from_files()
+        self.current_path = self.current_path / file_name
+        self.file = file.File(self.current_path)
+        self.view_file()
+
+    
+    def view_file(self):
+        self.show_header()
+        self.file.open()
+        self.file.view()  
+
 
 
 class UserInterface(Interface):
     """
     User Tasks:
-        - CRUD Personal Files
         - Share Files
         - Message other users
-        - Report/Feedback/Contact to admins
     """
 
-    def __init__(self, user=None):
-        super().__init__(user)
+    def __init__(self, user):
+        super().__init__()
         self.user = user
+        self.current_path = pathlib.Path(str(config.USER_PERSONAL_PATH).format(self.user.username))
 
 
     def home(self):
@@ -137,8 +172,10 @@ class UserInterface(Interface):
         if choice == "Files":
             self.open_file_explorer()
 
+        self.current_path = self.current_path.parent
+
     def open_file_explorer(self):
-        super().open_file_explorer()
+        super().open_file_explorer(self.current_path)
         choice = self.choose_from_menu([
             "Create File",
             "Open File",
@@ -152,7 +189,7 @@ class UserInterface(Interface):
         elif choice == 'delete file':
             self.delete_file()
 
-    def create_file(self):
+    def create_file(self): #TODO check for existing file
         file_name = rich.prompt.Prompt.ask("Enter Filename With Extensoin: ")
         file_name = '_'.join(file_name.split(' '))
         (self.current_path / file_name).touch()
@@ -176,7 +213,7 @@ class UserInterface(Interface):
         time.sleep(3)
         self.clear_screen()
 
-    def delete_file(self):
+    def delete_file(self):# TODO check for non-existing file
         file_name = rich.prompt.Prompt.ask("Enter Filename With Extensoin: ")
         file_name = '_'.join(file_name.split(' '))
         (self.current_path / file_name).unlink()

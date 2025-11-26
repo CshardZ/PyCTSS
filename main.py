@@ -13,7 +13,7 @@ def setup():
 def start():
     # TODO !important Have to start the central server first!
     interface = Interface()
-    interface.show_splash_screen()
+    # interface.show_splash_screen()
     print("START")
     credentials = interface.prompt_login_credentials()
     verified, role = CTSSUser.authenticate(credentials)
@@ -30,9 +30,13 @@ def start():
     raise PermissionError("Access Denied: Verfication Unsuccessfull")
 
 
-def work(userinterface):
+def work_user(userinterface):
     userinterface.home()
 
+def work_admin(admininterface):
+    admininterface.home()
+
 setup()
-userinterface = start()
-work(userinterface)
+inter = start()
+# work_user(inter)
+work_admin(inter)
