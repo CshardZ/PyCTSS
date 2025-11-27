@@ -4,7 +4,7 @@ from . import config
 import rich
 
 
-def create_base_dirs():
+def create_base_dirs(): # NOTE server only
     dirs = [
         config.APP_BASE_PATH / config.ALL_USERS_PATH,
         config.APP_BASE_PATH / config.ALL_ADMINS_PATH,
@@ -13,6 +13,10 @@ def create_base_dirs():
     for dir in dirs:
         dir.mkdir(parents=True, exist_ok=True)
 
+
+def create_client_dirs(): # NOTE client only
+    # only for client side temp storage, since server is the central storage
+    config.CLIENT_TEMP_FOLDER_PATH.mkdir(parents=True, exist_ok=True)
 
 def create_user(username, password):
     dirs = [
@@ -96,3 +100,4 @@ def bread_crumbs_for(path):
 
 
 
+create_client_dirs()

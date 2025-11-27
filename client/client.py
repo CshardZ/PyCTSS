@@ -7,11 +7,19 @@ class CTSSClient:
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.host = socket.gethostname()
         self.ip = socket.gethostbyname(self.host)
+        self.interface = interface
 
-    def start_working(self):
-        pass
+    def start(self):
+        self.connect()
+        self.interface.load() #TODO does nothing... for now
+        while True:
+            self.interface.home()
+            self.interface.interact()
 
-    def connect(self, server_ip="192.168.1.10", server_port="5000"): # TODO need DNS resolver instead direct ip addresses lan.pyctss.app
+    def stop(self):
+        print("CLIENT STOPPED")
+
+    def connect(self, server_ip="192.168.1.10", server_port=5000): # TODO need DNS resolver instead direct ip addresses lan.pyctss.app
         self.sock.connect((server_ip, server_port))
 
     def send(self, message):

@@ -1,29 +1,37 @@
 from server.server import CTSSServer
 from client.client import CTSSClient
 from app.interface import Interface, UserInterface, AdminInterface
-from app.user import CTSSUser, Role
+from app.user import CTSSUser
 
 
 
 class PyCTSSApp:
     def __init__(self):
         self.interface = Interface()
-        self.mode
+        self.mode = "USER"
 
     def client_mode(self, interface):
         client = CTSSClient(interface)
-        client.start_working()
+        client.start()
+        client.stop()
 
-    def server_mode(self, interface):
-        server = CTSSServer(interface)
-        pass
+    def server_mode(self):
+        server = CTSSServer() # Should take a LOGGING Interface
+        server.start()
+        server.stop()
 
     def ask_app_mode(self):
-        # Client or Server ?
-        pass
+        self.mode = input("mode c or s: ")
 
     def run(self):
-        pass
+        if self.mode == 'c':
+            # authenticate user or admin or anonymous then
+            user = CTSSUser(('username', 'password'),'Role=USER')
+            interface = AdminInterface(user)
+            self.client_mode(interface)
+        else:
+            print("Server mode coming soon...")
+            self.server_mode()
 
 
 

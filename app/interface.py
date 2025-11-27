@@ -12,16 +12,13 @@ class Interface:
         self.screen = rich.console.Console()
         self.file: file.File
 
-    def clear_screen(self):
-        self.screen.clear()
 
-    def show_header(self, path=pathlib.Path()):
-        self.clear_screen()
+    def show_header(self):
+        self.screen.clear()
         self.screen.rule(f"[bold]{config.APP_NAME}[/bold]")
-        self.screen.print(app_util.bread_crumbs_for(path))
-        self.screen.rule()
-        self.screen.print("\n\n")
-        
+
+    def load(self):
+        print("load()")
 
     def show_splash_screen(self):
         def draw(progress): #TODO can move this to util or ... app_util?
@@ -43,6 +40,7 @@ class Interface:
         time.sleep(3)
 
     def choose_from_menu(self, options):
+        self.screen.rule(characters="-", style="grey")
         self.screen.print("[bold blue]Choose From Menu[/bold blue]")
         self.screen.rule(characters="-", style="grey")
 
@@ -54,6 +52,8 @@ class Interface:
         command = self.screen.input(config.PROMPT_STYLE).strip().upper()
         if command in commands:
             return commands[command]
+        else:
+            return ""
 
     def prompt_login_credentials(self):
         self.show_header()
@@ -62,7 +62,6 @@ class Interface:
         return username, password #TODO Must return hashed password, build a custom hashing function with salting
 
     def open_file_explorer(self, path):
-        self.show_header(path)
         files_table = app_util.build_rich_table(["File Number", "File Name", "Size", "Created", "Updated"])
         files_info = app_util.get_files_info(path)
 
@@ -79,7 +78,8 @@ class Interface:
 
 
 
-class AdminInterface(Interface): #TODO email everytime admin logs in
+class AdminInterface(Interface):
+
     def __init__(self, user):
         super().__init__()
         self.user = user
@@ -87,28 +87,52 @@ class AdminInterface(Interface): #TODO email everytime admin logs in
         self.file: file.File
     
 
-    def home(self):
-        self.show_header(self.current_path)
-        choice = self.choose_from_menu([
-            "Credentials-Registry",
-            "Manage-Users",
-        ])
+    def show_header(self):
+        super().show_header()
+        self.screen.print(app_util.bread_crumbs_for(self.current_path))
+        self.screen.rule()
+        self.screen.print("\n\n")
 
-        if not choice is None:
-            self.current_path = self.current_path / choice
+
+    def home(self):
+        self.show_header()
+
+
+    def interact(self, options=None):
+        if not options:
+            options = [
+                "Credentials-Registry",
+                "Manage-Users",
+            ]
+
+        choice = self.choose_from_menu(options)
+        self.current_path = self.current_path / choice
+
         if choice == "Credentials-Registry":
-            self.open_file_explorer()
+            self.file_explorer()
         elif choice == "Manage-Users":
-            self.open_manage_users()
+            self.manage_users()
 
         self.current_path = self.current_path.parent
 
 
-    def open_manage_users(self):
-        choice = self.choose_from_menu([
+    def file_explorer(self):
+        self.show_header()
+        super().open_file_explorer(self.current_path)
+        file_name = self.choose_from_files()
+        self.current_path = self.current_path / file_name
+        self.file = file.File(self.current_path)
+        self.view_file()
+        self.current_path = self.current_path.parent
+
+
+    def manage_users(self):
+        options = [
             "Create User",
             "Delete User",
-        ])
+        ]
+
+        choice = self.choose_from_menu(options)
 
         if choice == "Create User":
             self.create_normal_user()
@@ -126,14 +150,6 @@ class AdminInterface(Interface): #TODO email everytime admin logs in
     def delete_normal_user(self):
         username = rich.prompt.Prompt.ask("New Username")
         app_util.delete_user(username)
-
-
-    def open_file_explorer(self):
-        super().open_file_explorer(self.current_path)
-        file_name = self.choose_from_files()
-        self.current_path = self.current_path / file_name
-        self.file = file.File(self.current_path)
-        self.view_file()
 
     
     def view_file(self):
