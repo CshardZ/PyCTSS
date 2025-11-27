@@ -62,7 +62,7 @@ class Interface:
         return username, password #TODO Must return hashed password, build a custom hashing function with salting
 
     def open_file_explorer(self, path):
-        self.show_header()
+        self.show_header(path)
         files_table = app_util.build_rich_table(["File Number", "File Name", "Size", "Created", "Updated"])
         files_info = app_util.get_files_info(path)
 
@@ -120,14 +120,12 @@ class AdminInterface(Interface): #TODO email everytime admin logs in
         new_username = rich.prompt.Prompt.ask("New Username")
         new_password = rich.prompt.Prompt.ask("New Password", password=True)
         confirm_password = rich.prompt.Prompt.ask("Confirm Password", password=True)
-        app_util.create_new_user_dirs(new_username)
-        app_util.store_user_credentials(new_username, new_password)
+        app_util.create_user(new_username, new_password)
 
 
     def delete_normal_user(self):
         username = rich.prompt.Prompt.ask("New Username")
-        import shutil
-        shutil.rmtree(config.ALL_USERS_PATH / username)
+        app_util.delete_user(username)
 
 
     def open_file_explorer(self):
@@ -159,7 +157,7 @@ class UserInterface(Interface):
 
 
     def home(self):
-        self.show_header()
+        self.show_header(self.current_path)
         choice = self.choose_from_menu([
             "Files",
             "Shared",
@@ -198,7 +196,7 @@ class UserInterface(Interface):
         file_name = self.choose_from_files()
         self.current_path = self.current_path / file_name
         self.file = file.File(self.current_path)
-        self.show_header()
+        self.show_header(self.current_path)
         self.file.open()
         self.file.edit()    
 

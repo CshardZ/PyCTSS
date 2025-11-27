@@ -1,42 +1,48 @@
 from server.server import CTSSServer
 from client.client import CTSSClient
-from util import util
-from app import app_util
 from app.interface import Interface, UserInterface, AdminInterface
 from app.user import CTSSUser, Role
 
-def setup():
-    app_util.create_base_dirs()
-    if not util.app_base_dir_exists():
+
+
+class PyCTSSApp:
+    def __init__(self):
+        self.interface = Interface()
+        self.mode
+
+    def client_mode(self, interface):
+        client = CTSSClient(interface)
+        client.start_working()
+
+    def server_mode(self, interface):
+        server = CTSSServer(interface)
         pass
 
-def start():
-    # TODO !important Have to start the central server first!
-    interface = Interface()
-    # interface.show_splash_screen()
-    print("START")
-    credentials = interface.prompt_login_credentials()
-    verified, role = CTSSUser.authenticate(credentials)
-    if verified:
-        if role == Role.ADMIN:
-            admin_user = CTSSUser(credentials, role)
-            return AdminInterface(admin_user)
-        if role == Role.USER:
-            normal_user = CTSSUser(credentials, role)
-            return UserInterface(normal_user)
-        if role == Role.ANONYMOUS:
-            raise PermissionError("Access Denied: Role Unidentified")
-    
-    raise PermissionError("Access Denied: Verfication Unsuccessfull")
+    def ask_app_mode(self):
+        # Client or Server ?
+        pass
+
+    def run(self):
+        pass
 
 
-def work_user(userinterface):
-    userinterface.home()
 
-def work_admin(admininterface):
-    admininterface.home()
 
-setup()
-inter = start()
-# work_user(inter)
-work_admin(inter)
+if __name__ == '__main__':
+    app = PyCTSSApp()
+    app.ask_app_mode()
+    app.run()
+
+"""
+1. Run as Server/Client
+    IF Server THEN 
+        - setup centeral server
+        - setup threading
+        - start listening
+
+    IF Client THEN Authentication(admin/user)
+        - Ensure server running else provide proper message that server is down
+        - Connect to server automatically on auth verification
+        - Ensure client can communicate concurrently while others are also communicating
+        - Start working
+"""

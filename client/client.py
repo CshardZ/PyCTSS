@@ -1,14 +1,15 @@
 import socket
-
+from app.interface import Interface
 
 class CTSSClient:
     
-    def __init__(self, username, password):
-        self.__username = username
-        self.__password = password #TODO maintain hash table for all passwords
+    def __init__(self, interface: Interface):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.host = socket.gethostname()
         self.ip = socket.gethostbyname(self.host)
+
+    def start_working(self):
+        pass
 
     def connect(self, server_ip="192.168.1.10", server_port="5000"): # TODO need DNS resolver instead direct ip addresses lan.pyctss.app
         self.sock.connect((server_ip, server_port))

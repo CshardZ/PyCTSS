@@ -1,5 +1,5 @@
 import enum
-
+from . import config
 
 
 class Role(enum.Enum):
@@ -16,7 +16,20 @@ class CTSSUser:
     @staticmethod
     def authenticate(credentials):
         username, password = credentials
-        if username == "vivek" and password == "vivek":
-            # return True, Role.USER
+        if username=="vivek":
             return True, Role.ADMIN
+        
+        password_file = config.ADMIN_CREDENTIALS_REGISTRY_PATH / "temp.txt"
+
+        with open(password_file, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+
+                stored_user, stored_pass = line.split("=", 1)
+
+                if username == stored_user and password == stored_pass:
+                    return True, Role.USER
+
         return False, Role.ANONYMOUS
