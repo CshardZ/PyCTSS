@@ -26,13 +26,16 @@ class CTSSClient:
         self.sock.connect((server_ip, server_port))
 
 
-    def send_request(self, protocol, path):
-        request = f"{protocol}[SEP]{path}"
+    def send_request(self, protocol, path, method="NONE", content="NONE"):
+        request = f"{protocol}[SEP]{path}[SEP]{method}[SEP]{content}"
         self.send(request)
 
 
     def get_response(self, protocol):
         # format message based on protocol
         self.receive()
-        data = json.loads(self.last_response.decode())
-        return dict(data)
+        if protocol == "FILES_LIST":
+            data = json.loads(self.last_response.decode())
+            return dict(data)
+        elif protocol == "FILE_OBJ":
+            return self.last_response

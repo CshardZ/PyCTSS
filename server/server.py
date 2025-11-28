@@ -33,15 +33,25 @@ class CTSSServer:
 
 
     def handle_client(self, client, addr):
-        while True:
+        request_count = 1
+        while request_count <= 3:
+            request_count += 1
             request = self.receive(client)
             if request:
-                if request.split("[SEP]")[0] == "FILES_LIST":
-                    dir_path = config.APP_BASE_PATH / request.split("[SEP]")[1]
+                protocol, path, method, payload = request.split("[SEP]")
+                if protocol == "FILES_LIST":
+                    dir_path = config.APP_BASE_PATH / path
                     print("Ppath is",dir_path, "app base is:", config.APP_BASE_PATH)
                     payload = self.get_files_list(dir_path)
                     client.send(payload)
-                break
+                elif protocol == "FILE_OBJ":
+                    file_path = config.APP_BASE_PATH / path
+                    if method == "PUSH":
+                        if payload != "NONE":
+                            file_path.write_text(payload)
+                    else:    
+                        payload = file_bytes = file_path.read_bytes()
+                        client.send(payload)
 
     def listen(self):
         self.sock.bind((self.ip, 5000))

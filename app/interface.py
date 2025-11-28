@@ -132,18 +132,19 @@ class AdminInterface(Interface):
         response = self.client.get_response("FILES_LIST")
         # convert that to object
         super().open_file_explorer(dict(response))
-        # display here all files
         # chose a file
+        file_name = self.choose_from_files()
         # request server for content of that file
-        # print the content here with prompt toolkit for edit
-        # get the new content and
-        # send the data, expecting no reponse from server for that.
-        # server updates the file with new content.
-        # file_name = self.choose_from_files()
-        # self.current_path = self.current_path / file_name
-        # self.file = file.File(self.current_path)
-        # self.view_file()
-        # self.current_path = self.current_path.parent
+        self.client.send_request("FILE_OBJ", (self.current_path / file_name))
+        response = self.client.get_response("FILE_OBJ")
+        (config.CLIENT_TEMP_FOLDER_PATH / "temp.txt").touch()
+        self.file = file.File(config.CLIENT_TEMP_FOLDER_PATH / 'temp.txt')
+        self.file.write_binary(response)
+        self.view_file()
+        # after this file gets updated
+        updated_text = self.file.read_text()
+        self.client.send_request("FILE_OBJ", (self.current_path / file_name), method="PUSH", content=updated_text)
+        (config.CLIENT_TEMP_FOLDER_PATH / "temp.txt").unlink()
 
 
     def manage_users(self):
@@ -175,7 +176,8 @@ class AdminInterface(Interface):
     def view_file(self):
         self.show_header()
         self.file.open()
-        self.file.view()  
+        self.file.edit()  
+        self.file.save()
 
 
 

@@ -29,3 +29,14 @@ class File:
 
     def save(self):
         self.file.write_text(self.new_content)
+
+    def write_binary(self, content):
+        self.file.write_bytes(content)
+
+    def read_binary(self):
+        file_bytes = self.file.read_bytes()
+        return file_bytes
+    
+    def read_text(self):
+        content = self.file.read_text()
+        return content
