@@ -14,7 +14,7 @@ def create_base_dirs(): # NOTE server only
         dir.mkdir(parents=True, exist_ok=True)
 
 
-def create_client_dirs(): # NOTE client only
+def create_client_dirs(): # NOTE client only, basically a cache area
     # only for client side temp storage, since server is the central storage
     config.CLIENT_TEMP_FOLDER_PATH.mkdir(parents=True, exist_ok=True)
 
@@ -52,7 +52,7 @@ def build_rich_table(cols): #TODO need colors to columns
         table.add_column(col)
     return table
 
-def get_files_info(path):
+def get_files_info(path): #TODO MOVED TO server_util.py
     files_info = {}
     for index, file in enumerate(path.iterdir(), start=1):
         stats = file.stat()

@@ -10,10 +10,13 @@ class PyCTSSApp:
         self.interface = Interface()
         self.mode = "USER"
 
-    def client_mode(self, interface):
-        client = CTSSClient(interface)
-        client.start()
-        client.stop()
+    def client_mode(self):
+        # authenticate user or admin or anonymous then
+        user = CTSSUser(('vivek', 'password'),'ADMIN')
+        client = CTSSClient()
+        interface = AdminInterface(user, client)
+        interface.start()
+        interface.stop()
 
     def server_mode(self):
         server = CTSSServer() # Should take a LOGGING Interface
@@ -25,12 +28,8 @@ class PyCTSSApp:
 
     def run(self):
         if self.mode == 'c':
-            # authenticate user or admin or anonymous then
-            user = CTSSUser(('username', 'password'),'Role=USER')
-            interface = AdminInterface(user)
-            self.client_mode(interface)
+            self.client_mode()
         else:
-            print("Server mode coming soon...")
             self.server_mode()
 
 

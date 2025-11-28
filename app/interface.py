@@ -61,12 +61,11 @@ class Interface:
         password = rich.prompt.Prompt.ask("Password", password=True)
         return username, password #TODO Must return hashed password, build a custom hashing function with salting
 
-    def open_file_explorer(self, path):
+    def open_file_explorer(self, files_info):
         files_table = app_util.build_rich_table(["File Number", "File Name", "Size", "Created", "Updated"])
-        files_info = app_util.get_files_info(path)
 
         for index, details in files_info.items():
-            index = f"{index:4d}"
+            index = f"{int(index):4d}"
             files_table.add_row(index,*details.values())
             
         self.screen.print(files_table, justify="center")
@@ -80,18 +79,27 @@ class Interface:
 
 class AdminInterface(Interface):
 
-    def __init__(self, user):
+    def __init__(self, user, client):
         super().__init__()
         self.user = user
-        self.current_path = config.ALL_ADMINS_PATH
+        self.current_path = config.CLIENT_SIDE_RELATIVE_ADMINS
         self.file: file.File
+        self.client = client
     
+    def start(self):
+        self.client.connect_to_server() #NOTE can be done in init itself
+        # while True:
+        self.home()
+        self.interact()
+        self.stop()
+
+
+    def stop(self):
+        pass
+
 
     def show_header(self):
         super().show_header()
-        self.screen.print(app_util.bread_crumbs_for(self.current_path))
-        self.screen.rule()
-        self.screen.print("\n\n")
 
 
     def home(self):
@@ -118,12 +126,24 @@ class AdminInterface(Interface):
 
     def file_explorer(self):
         self.show_header()
-        super().open_file_explorer(self.current_path)
-        file_name = self.choose_from_files()
-        self.current_path = self.current_path / file_name
-        self.file = file.File(self.current_path)
-        self.view_file()
-        self.current_path = self.current_path.parent
+        # Request server for files in a particular path
+        self.client.send_request("FILES_LIST", self.current_path)
+        # server gets all files details from that path and gives it back
+        response = self.client.get_response("FILES_LIST")
+        # convert that to object
+        super().open_file_explorer(dict(response))
+        # display here all files
+        # chose a file
+        # request server for content of that file
+        # print the content here with prompt toolkit for edit
+        # get the new content and
+        # send the data, expecting no reponse from server for that.
+        # server updates the file with new content.
+        # file_name = self.choose_from_files()
+        # self.current_path = self.current_path / file_name
+        # self.file = file.File(self.current_path)
+        # self.view_file()
+        # self.current_path = self.current_path.parent
 
 
     def manage_users(self):

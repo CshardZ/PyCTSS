@@ -1,34 +1,38 @@
 import socket
-from app.interface import Interface
+import json # standard format
+
 
 class CTSSClient:
     
-    def __init__(self, interface: Interface):
+    def __init__(self):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.host = socket.gethostname()
         self.ip = socket.gethostbyname(self.host)
-        self.interface = interface
+        self.last_response = None
 
-    def start(self):
-        self.connect()
-        self.interface.load() #TODO does nothing... for now
-        while True:
-            self.interface.home()
-            self.interface.interact()
-
-    def stop(self):
-        print("CLIENT STOPPED")
-
-    def connect(self, server_ip="192.168.1.10", server_port=5000): # TODO need DNS resolver instead direct ip addresses lan.pyctss.app
-        self.sock.connect((server_ip, server_port))
 
     def send(self, message):
         encoded_message = message.encode('utf-8')
         self.sock.send(encoded_message)
+        print("I sent a message bro")
 
-    def send_file(self, file_path):
-        pass
 
     def receive(self):
-        message = self.sock.recv(1024)
-        decoded_message = message.decode('utf-8')
+        message = self.sock.recv(999_999)
+        self.last_response = message
+
+
+    def connect_to_server(self, server_ip="192.168.1.10", server_port=5000): # TODO need DNS resolver instead direct ip addresses lan.pyctss.app
+        self.sock.connect((server_ip, server_port))
+
+
+    def send_request(self, protocol, path):
+        request = f"{protocol}[SEP]{path}"
+        self.send(request)
+
+
+    def get_response(self, protocol):
+        # format message based on protocol
+        self.receive()
+        data = json.loads(self.last_response.decode())
+        return dict(data)
