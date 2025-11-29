@@ -1,4 +1,5 @@
 from datetime import datetime
+from app import config
 
 
 def get_files_info(path):
@@ -12,3 +13,17 @@ def get_files_info(path):
             'updated': datetime.fromtimestamp(stats.st_mtime).strftime("%Y.%m.%d %H:%M:%S")
         }
     return files_info
+
+
+def create_user_workspace(credentials):
+    username, _ = credentials
+    dirs = [
+        config.ALL_USERS_PATH / username / "Files",
+    ]
+    for dir in dirs:
+        dir.mkdir(parents=True, exist_ok=True)
+
+def delete_user_workspace(credentials):
+    import shutil
+    username, _ = credentials
+    shutil.rmtree(config.ALL_USERS_PATH / username)

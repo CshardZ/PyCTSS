@@ -3,7 +3,7 @@ from prompt_toolkit.document import Document
 
 
 
-class File:
+class File: # TODO to rename as CTSSFileSystem, that CRUD all file ops
     def __init__(self, path):
         self.file = path
         self.name = None
@@ -37,6 +37,9 @@ class File:
         file_bytes = self.file.read_bytes()
         return file_bytes
     
+    def write_text(self, content):
+        self.file.write_text(content)
+
     def read_text(self):
         content = self.file.read_text()
         return content

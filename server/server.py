@@ -3,7 +3,9 @@ import threading
 import time
 from app import config
 from . import server_util
-import json # standard format for data serialization
+import json
+from util import util
+from auth import auth
 
 
 class CTSSServer:
@@ -17,41 +19,83 @@ class CTSSServer:
     def start(self):
         self.sock.bind((self.ip, 5000))
         self.sock.listen(5)
-        print(self.ip, "Server started, now listening...")
+        print(self.ip, "SERVER STARTED, Listening...\n\n")
         while True:
             client, addr = self.accept_connection()
             thread = threading.Thread(target=self.handle_client, args=(client, addr))
-            # IMP TODO get the username bound to the address, need it for serving personal files
             thread.start()
-            # Above mechanism will create destroy multiple threads per client per task as client requests
-            # Check if the thread can be kept alive till client request END CONNECTION
-            # manage all tasks in task stack something like that.
-            print("Active Clients: ", threading.active_count()-1)            
-
-    def get_files(self, request):
-        pass
 
 
     def handle_client(self, client, addr):
-        request_count = 1
-        while request_count <= 3:
-            request_count += 1
+        while True:
             request = self.receive(client)
             if request:
-                protocol, path, method, payload = request.split("[SEP]")
-                if protocol == "FILES_LIST":
-                    dir_path = config.APP_BASE_PATH / path
-                    print("Ppath is",dir_path, "app base is:", config.APP_BASE_PATH)
-                    payload = self.get_files_list(dir_path)
-                    client.send(payload)
-                elif protocol == "FILE_OBJ":
-                    file_path = config.APP_BASE_PATH / path
-                    if method == "PUSH":
-                        if payload != "NONE":
-                            file_path.write_text(payload)
-                    else:    
-                        payload = file_bytes = file_path.read_bytes()
-                        client.send(payload)
+                header = request['header']
+                method = request['method']
+                resource = request['resource']
+                payload = request['payload']
+
+                if method == "CREATE":
+                    if resource == "FILE":
+                        file = config.APP_BASE_PATH / header['path'] / payload
+                        file.touch()
+                    if resource == "USER":
+                        auth.CTSSAuth.sign_up(payload)
+                        server_util.create_user_workspace(payload) # only username enough, payload consists both credentials
+                    if resource == "ADMIN":
+                        auth.CTSSAuth.sign_up(payload)
+                
+                elif method == "READ":
+                    if resource == "FILE":
+                        file = config.APP_BASE_PATH / header['path']
+                        file_content = file.read_text()
+                        packet = util.serialize_packet("READ", "FILE", content=file_content)
+                        self.send(client, packet)
+
+                    if resource == "FOLDER":
+                        folder_path = config.APP_BASE_PATH / header['path']
+                        folder_files = self.get_files_list(folder_path)
+                        packet = util.serialize_packet("READ", "FOLDER", content=folder_files)
+                        self.send(client, packet)
+                    if resource == "USER":
+                        verified = auth.CTSSAuth.sign_in(payload)
+                    if resource == "ADMIN":
+                        verified = auth.CTSSAuth.sign_in(payload)
+                
+                elif method == "UPDATE":
+                    if resource == "FILE":
+                        file = config.APP_BASE_PATH / header['path']
+                        file.write_text(payload)
+                    elif resource == "FOLDER":
+                        # NOTE Feature not planned
+                        pass
+
+                elif method == "DELETE":
+                    if resource == "FILE":
+                        file = config.APP_BASE_PATH / header['path'] / payload
+                        file.unlink()
+                    if resource == "USER":
+                        auth.CTSSAuth.delete_account(payload)
+                        server_util.delete_user_workspace(payload)
+                    if resource == "ADMIN":
+                        auth.CTSSAuth.delete_account(payload)
+
+                elif method == "SHARE":
+                    pass
+
+                '''
+                    Admin Can:
+                        - Create User: 
+                            CREATE method of CREATE/DELETE/PUSH/PULL
+                            USER resource
+                        - Delete User: 
+                            DELETE method of CREATE/DELETE/PUSH/PULL
+                            USER resource
+                        - View Files: 
+                            PULL method of CREATE/DELETE/PUSH/PULL
+                            FILE / FOLDER resource
+                '''
+
 
     def listen(self):
         self.sock.bind((self.ip, 5000))
@@ -64,8 +108,8 @@ class CTSSServer:
 
     def get_files_list(self, dir_path):
         data = server_util.get_files_info(dir_path)
-        payload = json.dumps(data).encode()
-        return payload
+        # payload = json.dumps(data).encode()
+        return data
 
     def accept_connection(self):
         client, address = self.sock.accept()
@@ -80,10 +124,13 @@ class CTSSServer:
 
     def receive(self, client):
         # TODO Implement length prefixed framming for message transmission
-        data = client.recv(1024).decode('utf-8')
+        raw = client.recv(1024)
+        data = None
+        if raw:
+            data = json.loads(raw.decode('utf-8'))
         print("SERVER:Message Received: ", data)
-        return data
+        return dict(data)
 
 
-    def send(self):
-        pass
+    def send(self, client, packet):
+        client.send(packet)

@@ -126,24 +126,18 @@ class AdminInterface(Interface):
 
     def file_explorer(self):
         self.show_header()
-        # Request server for files in a particular path
-        self.client.send_request("FILES_LIST", self.current_path)
-        # server gets all files details from that path and gives it back
-        response = self.client.get_response("FILES_LIST")
-        # convert that to object
+        self.client.send("READ", "FOLDER", self.current_path)
+        response = self.client.receive()
         super().open_file_explorer(dict(response))
-        # chose a file
         file_name = self.choose_from_files()
-        # request server for content of that file
-        self.client.send_request("FILE_OBJ", (self.current_path / file_name))
-        response = self.client.get_response("FILE_OBJ")
+        self.client.send("READ", "FILE", (self.current_path / file_name))
+        response = self.client.receive()
         (config.CLIENT_TEMP_FOLDER_PATH / "temp.txt").touch()
         self.file = file.File(config.CLIENT_TEMP_FOLDER_PATH / 'temp.txt')
-        self.file.write_binary(response)
+        self.file.write_text(response)
         self.view_file()
-        # after this file gets updated
         updated_text = self.file.read_text()
-        self.client.send_request("FILE_OBJ", (self.current_path / file_name), method="PUSH", content=updated_text)
+        self.client.send("UPDATE", "FILE", (self.current_path / file_name), updated_text)
         (config.CLIENT_TEMP_FOLDER_PATH / "temp.txt").unlink()
 
 
@@ -156,21 +150,23 @@ class AdminInterface(Interface):
         choice = self.choose_from_menu(options)
 
         if choice == "Create User":
-            self.create_normal_user()
+            self.create_user()
         elif choice == "Delete User":
-            self.delete_normal_user()
+            self.delete_user()
 
 
-    def create_normal_user(self):
+    def create_user(self):
         new_username = rich.prompt.Prompt.ask("New Username")
         new_password = rich.prompt.Prompt.ask("New Password", password=True)
         confirm_password = rich.prompt.Prompt.ask("Confirm Password", password=True)
-        app_util.create_user(new_username, new_password)
+        credentials = (new_username, new_password)
+        self.client.send("CREATE", "USER", content=credentials)
 
 
-    def delete_normal_user(self):
-        username = rich.prompt.Prompt.ask("New Username")
-        app_util.delete_user(username)
+    def delete_user(self):
+        username = rich.prompt.Prompt.ask("Username to delete: ")
+        credentials = (username, "")
+        self.client.send("DELETE", "USER", content=credentials)
 
     
     def view_file(self):

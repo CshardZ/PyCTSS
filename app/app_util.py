@@ -18,33 +18,7 @@ def create_client_dirs(): # NOTE client only, basically a cache area
     # only for client side temp storage, since server is the central storage
     config.CLIENT_TEMP_FOLDER_PATH.mkdir(parents=True, exist_ok=True)
 
-def create_user(username, password):
-    dirs = [
-        config.ALL_USERS_PATH / username / "Files",
-    ]
-    for dir in dirs:
-        dir.mkdir(parents=True, exist_ok=True)
 
-    password_file = config.ADMIN_CREDENTIALS_REGISTRY_PATH / "temp.txt"
-    password_file.touch()
-    with open(password_file, 'a') as f:
-        credential = f"{username}={password}\n"
-        f.write(credential)
-
-def delete_user(username):
-    import shutil
-    shutil.rmtree(config.ALL_USERS_PATH / username)
-
-    password_file = config.ADMIN_CREDENTIALS_REGISTRY_PATH / "temp.txt"
-    # read all lines
-    with open(password_file, 'r') as f:
-        lines = f.readlines()
-
-    # write back only the lines that do NOT match the username
-    with open(password_file, 'w') as f:
-        for line in lines:
-            if not line.startswith(username + "="):
-                f.write(line)
 
 def build_rich_table(cols): #TODO need colors to columns
     table = rich.table.Table()

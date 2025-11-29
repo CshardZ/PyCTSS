@@ -1,11 +1,11 @@
 import enum
-from . import config
+from app import config
 
 
 class Role(enum.Enum):
-    ADMIN = "ROLE=ADMIN"
-    USER = "ROLE=USER"
-    ANONYMOUS = "ROLE=ANONYMOUS"
+    ADMIN = "ADMIN"
+    USER = "RUSER"
+    GUEST = "GUEST"
 
     
 class CTSSAuth:
@@ -13,23 +13,26 @@ class CTSSAuth:
     def __new__(cls, *args, **kwargs):
         raise TypeError("CTSSAuth is static only, cannot be instatiated")
     
-    @staticmethod
+    @classmethod
     def _authenticate(cls):
         pass
 
-    @staticmethod
+    @classmethod
     def _hash(cls, password):
         pass
 
-    @staticmethod
+    @classmethod
     def _store_credentials(cls, credentials):
         pass
     
-    @staticmethod
-    def sign_up(cls):
-        pass
+    @classmethod
+    def sign_up(cls, credentials):
+        username, password = credentials
+        password_file = config.ADMIN_CREDENTIALS_REGISTRY_PATH / "temp.txt"
+        with open(password_file, 'a') as f:
+            f.write(f"{username}={password}\n")
 
-    @staticmethod
+    @classmethod
     def sign_in(cls, credentials):
         username, password = credentials
         if username=="vivek":
@@ -50,15 +53,31 @@ class CTSSAuth:
 
         return False, Role.ANONYMOUS
     
-    @staticmethod
+    @classmethod
     def sign_out(cls):
         pass
     
-    @staticmethod
-    def delete_account(cls):
-        pass
+    @classmethod
+    def delete_account(cls, credentials):
+        username, password = credentials
+        password_file = config.ADMIN_CREDENTIALS_REGISTRY_PATH / "temp.txt"
+
+        with open(password_file, 'r') as f:
+            lines = f.readlines()
+
+        with open(password_file, 'w') as f:
+            for line in lines:
+                if not line.strip():
+                    continue
+
+                stored_user, _ = line.strip().split("=", 1)
+                if stored_user == username:
+                    continue
+
+                f.write(line)
+
     
 
-    @staticmethod
+    @classmethod
     def notify(cls):
         pass
