@@ -14,7 +14,8 @@ class PyCTSSApp:
         # authenticate user or admin or anonymous then
         user = CTSSUser(('vivek', 'password'),'ADMIN')
         client = CTSSClient()
-        interface = AdminInterface(user, client)
+        # interface = AdminInterface(user, client)
+        interface = UserInterface(user, client)
         interface.start()
         interface.stop()
 

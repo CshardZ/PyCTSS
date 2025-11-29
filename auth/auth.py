@@ -4,7 +4,7 @@ from app import config
 
 class Role(enum.Enum):
     ADMIN = "ADMIN"
-    USER = "RUSER"
+    USER = "USER"
     GUEST = "GUEST"
 
     

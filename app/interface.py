@@ -91,20 +91,15 @@ class AdminInterface(Interface):
         # while True:
         self.home()
         self.interact()
-        self.stop()
-
 
     def stop(self):
         pass
-
-
+    
     def show_header(self):
         super().show_header()
 
-
     def home(self):
         self.show_header()
-
 
     def interact(self, options=None):
         if not options:
@@ -123,7 +118,6 @@ class AdminInterface(Interface):
 
         self.current_path = self.current_path.parent
 
-
     def file_explorer(self):
         self.show_header()
         self.client.send("READ", "FOLDER", self.current_path)
@@ -140,20 +134,17 @@ class AdminInterface(Interface):
         self.client.send("UPDATE", "FILE", (self.current_path / file_name), updated_text)
         (config.CLIENT_TEMP_FOLDER_PATH / "temp.txt").unlink()
 
-
     def manage_users(self):
         options = [
             "Create User",
             "Delete User",
         ]
-
         choice = self.choose_from_menu(options)
 
         if choice == "Create User":
             self.create_user()
         elif choice == "Delete User":
             self.delete_user()
-
 
     def create_user(self):
         new_username = rich.prompt.Prompt.ask("New Username")
@@ -162,12 +153,10 @@ class AdminInterface(Interface):
         credentials = (new_username, new_password)
         self.client.send("CREATE", "USER", content=credentials)
 
-
     def delete_user(self):
         username = rich.prompt.Prompt.ask("Username to delete: ")
         credentials = (username, "")
         self.client.send("DELETE", "USER", content=credentials)
-
     
     def view_file(self):
         self.show_header()
@@ -179,60 +168,107 @@ class AdminInterface(Interface):
 
 class UserInterface(Interface):
     """
-    User Tasks:
-        - Share Files
+    User Can:
+        - Create File
+        - Delete File
+        - Edit File
+        - Share File
         - Message other users
     """
 
-    def __init__(self, user):
+    def __init__(self, user, client):
         super().__init__()
         self.user = user
-        self.current_path = pathlib.Path(str(config.USER_PERSONAL_PATH).format(self.user.username))
+        self.current_path = pathlib.Path(str(config.CLIENT_SIDE_RELATIVE_USERS).format(self.user.username))
+        self.client = client
+        self.file: file.File
 
+    def start(self):
+        self.client.connect_to_server() #NOTE can be done in init itself
+        # while True:
+        self.home()
+        self.interact()
+
+    def stop(self):
+        pass
+
+    def show_header(self):
+        return super().show_header()
 
     def home(self):
-        self.show_header(self.current_path)
-        choice = self.choose_from_menu([
+        self.show_header()
+
+
+    def interact(self, options=None):
+        options = [
             "Files",
             "Shared",
             "Contact",
             "Profile",
-        ])
+        ]
+        choice = self.choose_from_menu(options)
+
         if not choice is None:
             self.current_path = self.current_path / choice
 
         if choice == "Files":
-            self.open_file_explorer()
+            self.file_explorer()
 
         self.current_path = self.current_path.parent
 
-    def open_file_explorer(self):
-        super().open_file_explorer(self.current_path)
+    def file_explorer(self):
+        self.show_header()
+        self.client.send("READ", "FOLDER", self.current_path)
+        response = self.client.receive()
+        super().open_file_explorer(dict(response))
         choice = self.choose_from_menu([
             "Create File",
-            "Open File",
+            "Edit File",
             "Delete File",
+            "Share File",
         ]).lower()
 
         if choice == 'create file':
-            self.create_file()
-        elif choice == 'open file':
-            self.edit_file()
-        elif choice == 'delete file':
-            self.delete_file()
+            file_name = rich.prompt.Prompt.ask("Enter Filename With Extensoin: ")
+            file_name = '_'.join(file_name.split(' '))
+            self.client.send("CREATE", "FILE", self.current_path, content=file_name)
+            print("check if created")
 
-    def create_file(self): #TODO check for existing file
-        file_name = rich.prompt.Prompt.ask("Enter Filename With Extensoin: ")
-        file_name = '_'.join(file_name.split(' '))
-        (self.current_path / file_name).touch()
+        elif choice == 'edit file':
+            file_name = self.choose_from_files()
+            self.client.send("READ", "FILE", (self.current_path / file_name))
+            print("READ FILE path:", (self.current_path / file_name))
+            response = self.client.receive()
+            time.sleep(5)
+            (config.CLIENT_TEMP_FOLDER_PATH / "temp.txt").touch()
+            self.file = file.File(config.CLIENT_TEMP_FOLDER_PATH / 'temp.txt')
+            self.file.write_text(response)
+            self.edit_file()
+            updated_text = self.file.read_text()
+            print("UPDATE FILE path:", (self.current_path / file_name))
+            self.client.send("UPDATE", "FILE", (self.current_path / file_name), updated_text)
+            (config.CLIENT_TEMP_FOLDER_PATH / "temp.txt").unlink()
+
+        elif choice == 'delete file':
+            file_name = rich.prompt.Prompt.ask("Enter Filename With Extensoin: ")
+            file_name = '_'.join(file_name.split(' '))
+            self.client.send("DELETE", "FILE", self.current_path, content=file_name)
+            print("check if deleted")
+
+        elif choice == 'share file':
+            file_name = rich.prompt.Prompt.ask("Enter Filename With Extensoin: ")
+            receiver_username = rich.prompt.Prompt.ask("Enter receiver username: ")
+            file_name = '_'.join(file_name.split(' '))
+            receiver_path = pathlib.Path(str(config.CLIENT_SIDE_RELATIVE_USERS).format(receiver_username))
+            self.client.send("SHARE", "FILE", (str(self.current_path),str(receiver_path / "Files")), content=(receiver_username, file_name))
+
+
 
     def edit_file(self):
-        file_name = self.choose_from_files()
-        self.current_path = self.current_path / file_name
-        self.file = file.File(self.current_path)
-        self.show_header(self.current_path)
+        self.show_header()
         self.file.open()
-        self.file.edit()    
+        self.file.edit()  
+        self.file.save()   
 
         save = rich.prompt.Prompt.ask("Save file (y or n): ")
         if save == 'y':
@@ -241,9 +277,7 @@ class UserInterface(Interface):
         else:
             self.screen.print("File Not Saved")
         self.screen.print("Please wait...")
-        self.current_path = self.current_path.parent
         time.sleep(3)
-        self.clear_screen()
 
     def delete_file(self):# TODO check for non-existing file
         file_name = rich.prompt.Prompt.ask("Enter Filename With Extensoin: ")

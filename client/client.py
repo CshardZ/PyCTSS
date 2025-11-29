@@ -13,6 +13,14 @@ class CTSSClient:
     def connect_to_server(self, server_ip="192.168.1.10", server_port=5000): 
         # TODO need DNS resolver instead direct ip addresses lan.pyctss.app
         self.sock.connect((server_ip, server_port))
+        # Handshake with username
+        
+        request = util.serialize_packet(
+            method = "READ",
+            resource = "USER",
+            content = input('enter username: '),
+        )
+        self.sock.send(request)
 
     def send(self, method, resource, path="NONE", content="NONE"):
         request = util.serialize_packet(

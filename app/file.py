@@ -28,6 +28,7 @@ class File: # TODO to rename as CTSSFileSystem, that CRUD all file ops
         )
 
     def save(self):
+        print("saving this: ",self.new_content)
         self.file.write_text(self.new_content)
 
     def write_binary(self, content):

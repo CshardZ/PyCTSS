@@ -6,6 +6,7 @@ from . import server_util
 import json
 from util import util
 from auth import auth
+import pathlib
 
 
 class CTSSServer:
@@ -14,6 +15,7 @@ class CTSSServer:
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.host = socket.gethostname()
         self.ip = socket.gethostbyname(self.host)
+        self.clients = {}
 
 
     def start(self):
@@ -23,6 +25,10 @@ class CTSSServer:
         while True:
             client, addr = self.accept_connection()
             thread = threading.Thread(target=self.handle_client, args=(client, addr))
+            # handshake basically for getting username as payload
+            handshake_request = self.receive(client)
+            username = handshake_request['payload']
+            self.clients[username] = client
             thread.start()
 
 
@@ -65,6 +71,7 @@ class CTSSServer:
                 elif method == "UPDATE":
                     if resource == "FILE":
                         file = config.APP_BASE_PATH / header['path']
+                        file.touch()
                         file.write_text(payload)
                     elif resource == "FOLDER":
                         # NOTE Feature not planned
@@ -81,21 +88,16 @@ class CTSSServer:
                         auth.CTSSAuth.delete_account(payload)
 
                 elif method == "SHARE":
-                    pass
-
-                '''
-                    Admin Can:
-                        - Create User: 
-                            CREATE method of CREATE/DELETE/PUSH/PULL
-                            USER resource
-                        - Delete User: 
-                            DELETE method of CREATE/DELETE/PUSH/PULL
-                            USER resource
-                        - View Files: 
-                            PULL method of CREATE/DELETE/PUSH/PULL
-                            FILE / FOLDER resource
-                '''
-
+                    if resource == "FILE":
+                        receiver_username, file_name = payload
+                        sender_path, receiver_path = header['path'].strip("()").split(',')
+                        print("PRINTING PATH:", sender_path, receiver_path, pathlib.Path(sender_path), pathlib.Path(receiver_path))
+                        file = config.APP_BASE_PATH / sender_path.strip("'") / file_name
+                        file_content = file.read_text()
+                        receiver_file = config.APP_BASE_PATH / pathlib.Path(receiver_path.strip("' ")) / file_name
+                        receiver_file.write_text(file_content)
+                        print("time.sleep(20), after this its infinite why?")
+                        time.sleep(20)
 
     def listen(self):
         self.sock.bind((self.ip, 5000))
@@ -128,8 +130,8 @@ class CTSSServer:
         data = None
         if raw:
             data = json.loads(raw.decode('utf-8'))
-        print("SERVER:Message Received: ", data)
-        return dict(data)
+        print("SERVER:Message Received: No Block?: ", raw)
+        return data
 
 
     def send(self, client, packet):
