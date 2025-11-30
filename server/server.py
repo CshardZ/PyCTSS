@@ -130,8 +130,7 @@ class RequestHandler:
         return packet
     
     def _create_user(self):
-        auth.CTSSAuth.sign_up(self.payload)
-        server_util.create_user_workspace(self.payload)
+        auth.CTSSAuth.create_account(self.payload)
 
     def _read_user(self):
         username, verified, role = auth.CTSSAuth.verify_sign_in(self.payload)
@@ -141,4 +140,3 @@ class RequestHandler:
 
     def _delete_user(self):
         auth.CTSSAuth.delete_account(self.payload)
-        server_util.delete_user_workspace(self.payload)

@@ -54,7 +54,7 @@ class Interface:
 
     def authenticate(self):
         self.show_header()
-        username, verified, role = auth.CTSSAuth.sign_in(self.client)
+        username, verified, role = auth.CTSSAuth.sign_in(self.client) #TODO move auth calls this to client side
         return username, verified, role
 
     def files_table(self, files_info):
@@ -76,87 +76,84 @@ class AdminInterface(Interface):
     def __init__(self, user, client):
         super().__init__()
         self.user = user
-        self.current_path = config.CLIENT_SIDE_RELATIVE_ADMINS
-        self.file: file.File
         self.client = client
+        self.current_path = config.CLIENT_SIDE_RELATIVE_ADMINS
+        self.admin_input = ""
     
     def start(self):
-        self.client.connect_to_server() #NOTE can be done in init itself
-        # while True:
-        self.home()
+        self.client.connect_to_server()
+        # self.show_splash_screen()
         self.interact()
 
-    def stop(self):
-        pass
-    
     def show_header(self):
         super().show_header()
+        self.screen.print(f"[yellow]{app_util.bread_crumbs_for(self.current_path)}[/yellow]")
+        self.screen.rule()
+        self.screen.print()
 
-    def home(self):
+    def interact(self):
+        while True:
+            self.home_view()
+
+    def home_view(self):
         self.show_header()
+        self.admin_input = self.choose_from_menu([
+            "Credentials-Registry",
+            "Manage-Users",
+        ])
 
-    def interact(self, options=None):
-        if not options:
-            options = [
-                "Credentials-Registry",
-                "Manage-Users",
-            ]
+        if self.admin_input == "Credentials-Registry":
+            self.folder_view()
+        if self.admin_input == "Manage-Users":
+            self.manage_users_view(["Create User", "Delete User"])
 
-        choice = self.choose_from_menu(options)
-        self.current_path = self.current_path / choice
+    def manage_users_view(self, options):
+        self.current_path = self.current_path / self.admin_input
+        options.append('Go Back')
+        self.show_header()
+        self.admin_input = self.choose_from_menu(options)
+        if self.admin_input == "Go Back":
+            self.current_path = self.current_path.parent
 
-        if choice == "Credentials-Registry":
-            self.file_explorer()
-        elif choice == "Manage-Users":
-            self.manage_users()
+        self._handle_manage_users(self.admin_input)
+
+    
+    def folder_view(self):
+        self.current_path = self.current_path / self.admin_input
+        while True:
+            files_details = self.client.read_folder(self.current_path)
+            self.show_header()
+            self.files_table(files_details)
+            self.admin_input = self.choose_from_menu([
+                "View File",
+                "Go Back",
+            ])
+
+            if self.admin_input == "Go Back":
+                self.current_path = self.current_path.parent
+                break
+
+            self._handle_file_operation(self.admin_input)
+
+
+    def _handle_file_operation(self, admin_input):
+        file_name = rich.prompt.Prompt.ask("Enter file name")
+        self.current_path = self.current_path / file_name
+        self.show_header()
+        
+        if admin_input == "Read File":
+            temp_file = self.client.read_file(self.current_path)
+            self.file = file.CTSSFileHandler(temp_file)
+            self.file.open()
+            self.file.view()
 
         self.current_path = self.current_path.parent
 
-    def file_explorer(self):
-        self.show_header()
-        self.client.send("READ", "FOLDER", self.current_path)
-        response = self.client.receive()
-        super().open_file_explorer(dict(response))
-        file_name = self.choose_from_files()
-        self.client.send("READ", "FILE", (self.current_path / file_name))
-        response = self.client.receive()
-        (config.CLIENT_TEMP_FOLDER_PATH / "temp.txt").touch()
-        self.file = file.File(config.CLIENT_TEMP_FOLDER_PATH / 'temp.txt')
-        self.file.write_text(response)
-        self.view_file()
-        updated_text = self.file.read_text()
-        self.client.send("UPDATE", "FILE", (self.current_path / file_name), updated_text)
-        (config.CLIENT_TEMP_FOLDER_PATH / "temp.txt").unlink()
-
-    def manage_users(self):
-        options = [
-            "Create User",
-            "Delete User",
-        ]
-        choice = self.choose_from_menu(options)
-
-        if choice == "Create User":
-            self.create_user()
-        elif choice == "Delete User":
-            self.delete_user()
-
-    def create_user(self):
-        new_username = rich.prompt.Prompt.ask("New Username")
-        new_password = rich.prompt.Prompt.ask("New Password", password=True)
-        confirm_password = rich.prompt.Prompt.ask("Confirm Password", password=True)
-        credentials = (new_username, new_password)
-        self.client.send("CREATE", "USER", content=credentials)
-
-    def delete_user(self):
-        username = rich.prompt.Prompt.ask("Username to delete: ")
-        credentials = (username, "")
-        self.client.send("DELETE", "USER", content=credentials)
-    
-    def view_file(self):
-        self.show_header()
-        self.file.open()
-        self.file.edit()  
-        self.file.save()
+    def _handle_manage_users(self, admin_input):
+        if admin_input == "Create User":
+            auth.CTSSAuth.initiate_user_creation(self.client)
+        elif admin_input == "Delete User":
+            auth.CTSSAuth.initiate_user_deletion(self.client)
 
 
 

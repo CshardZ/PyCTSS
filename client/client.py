@@ -1,5 +1,4 @@
 import socket
-import json # standard format
 from util import util
 from app import config
 
@@ -71,8 +70,14 @@ class CTSSClient:
         data = self._receive()
         return data
     
+    
+    def create_user(self, credentials):
+        self._send('CREATE', 'USER', content = credentials)
+    
     def read_user(self, credentials):
         self._send('READ', 'USER', content = credentials)
         data = self._receive()
-        print("client:", data)
         return data
+    
+    def delete_user(self, username):
+        self._send('DELETE', 'USER', content = username)

@@ -15,8 +15,8 @@ class PyCTSSApp:
     def client_mode(self, username, role):
         user = CTSSUser(username, role)
         client = CTSSClient(user)
-        # interface = AdminInterface(user, client)
-        interface = UserInterface(user, client)
+        interface = AdminInterface(user, client)
+        # interface = UserInterface(user, client)
         interface.start()
 
     def server_mode(self):
