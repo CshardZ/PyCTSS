@@ -17,12 +17,10 @@ class PyCTSSApp:
         # interface = AdminInterface(user, client)
         interface = UserInterface(user, client)
         interface.start()
-        interface.stop()
 
     def server_mode(self):
         server = CTSSServer() # Should take a LOGGING Interface
         server.start()
-        server.stop()
 
     def ask_app_mode(self):
         self.mode = input("mode c or s: ")
