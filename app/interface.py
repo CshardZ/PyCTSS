@@ -5,12 +5,13 @@ import rich.console, rich.prompt
 from . import app_util
 from . import config
 from . import file
+from auth import auth
 
 
 class Interface:
-    def __init__(self):
+    def __init__(self, client=None):
         self.screen = rich.console.Console()
-        self.file: file.File
+        self.client = client
 
     def show_header(self):
         self.screen.clear()
@@ -40,7 +41,6 @@ class Interface:
         self.screen.rule(characters="-", style="grey")
         self.screen.print("[bold blue]Choose From Menu[/bold blue]")
         self.screen.rule(characters="-", style="grey")
-
         menu = app_util.build_menu_info(options)
         for command, option in menu.items():
             self.screen.print(command, option)
@@ -52,11 +52,10 @@ class Interface:
         else:
             return ""
 
-    def prompt_login_credentials(self):
+    def authenticate(self):
         self.show_header()
-        username = rich.prompt.Prompt.ask("Username")
-        password = rich.prompt.Prompt.ask("Password", password=True)
-        return username, password #TODO Must return hashed password, build a custom hashing function with salting
+        username, verified, role = auth.CTSSAuth.sign_in(self.client)
+        return username, verified, role
 
     def files_table(self, files_info):
         files_table = app_util.build_rich_table(["File Number", "File Name", "Size", "Created", "Updated"])

@@ -22,7 +22,7 @@ class CTSSServer:
         print(self.ip, "SERVER STARTED\n")
         while True:
             client, addr = self.accept_connection()
-            thread = threading.Thread(target=self.handle_client, args=(client))
+            thread = threading.Thread(target=self.handle_client, args=(client,))
             thread.start()
 
     def accept_connection(self):
@@ -134,8 +134,10 @@ class RequestHandler:
         server_util.create_user_workspace(self.payload)
 
     def _read_user(self):
-        verified = auth.CTSSAuth.sign_in(self.payload)
-        return verified
+        username, verified, role = auth.CTSSAuth.verify_sign_in(self.payload)
+        packet = util.serialize_packet('READ', 'USER', content=(username, verified, role))
+        print("server end:", packet)
+        return packet
 
     def _delete_user(self):
         auth.CTSSAuth.delete_account(self.payload)

@@ -5,20 +5,21 @@ from app import config
 
 class CTSSClient:
     
-    def __init__(self):
+    def __init__(self, user):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.host = socket.gethostname()
         self.ip = socket.gethostbyname(self.host)
         self.working_path = config.CLIENT_TEMP_FOLDER_PATH
+        self.user = user
 
     def connect_to_server(self, server_ip="192.168.1.10", server_port=5000): 
         # TODO need DNS resolver instead direct ip addresses lan.pyctss.app
         self.sock.connect((server_ip, server_port))
         # Handshake with username
         request = util.serialize_packet(
-            method = "READ",
-            resource = "USER",
-            content = input('enter username: '),
+            method = "NONE",
+            resource = "NONE",
+            content = self.user.username,
         )
         self.sock.send(request)
 
@@ -41,10 +42,7 @@ class CTSSClient:
         resource = response['resource']
         payload = response['payload']
 
-        if resource == "FILE":
-            return payload
-        elif resource == "FOLDER":
-            return payload
+        return payload
 
 
     def create_file(self, path):
@@ -71,4 +69,10 @@ class CTSSClient:
     def read_folder(self, path):
         self._send('READ', 'FOLDER', path)
         data = self._receive()
+        return data
+    
+    def read_user(self, credentials):
+        self._send('READ', 'USER', content = credentials)
+        data = self._receive()
+        print("client:", data)
         return data
