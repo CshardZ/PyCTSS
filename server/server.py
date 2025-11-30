@@ -1,6 +1,5 @@
 import socket
 import threading
-import time
 from app import config
 from . import server_util
 import json
@@ -23,20 +22,20 @@ class CTSSServer:
         print(self.ip, "SERVER STARTED\n")
         while True:
             client, addr = self.accept_connection()
-            thread = threading.Thread(target=self.handle_client, args=(client, addr))
+            thread = threading.Thread(target=self.handle_client, args=(client))
             thread.start()
 
     def accept_connection(self):
         client, address = self.sock.accept()
         client_address = f"{address[0]}:{address[1]}"
         client_name = socket.gethostbyaddr(address[0])[0]
-        print(f"Incoming Connection Request From: CTSSClient-{client_address}-{client_name}")
+        print(f"[CONNECTION]: CTSSClient-{client_address}-{client_name}")
         handshake_request = self.receive(client)
         username = handshake_request['payload']
         self.clients[username] = client
         return client, address
 
-    def handle_client(self, client, addr):
+    def handle_client(self, client):
         while True:
             request = self.receive(client)
             if request:
@@ -45,12 +44,12 @@ class CTSSServer:
                     client.send(packet)
 
     def receive(self, client):
-        # TODO Implement length prefixed framming for message transmission
+        # TODO Cannot handle large data
         raw = client.recv(1024)
         data = None
         if raw:
             data = json.loads(raw.decode('utf-8'))
-            print("SERVER:Message Received: No Block?: ", raw)
+            print("[REQUEST]:", raw)
         return data
 
 
@@ -141,66 +140,3 @@ class RequestHandler:
     def _delete_user(self):
         auth.CTSSAuth.delete_account(self.payload)
         server_util.delete_user_workspace(self.payload)
-
-    
-    
-
-
-'''
-
-            if method == "CREATE":
-                if resource == "FILE":
-                    file = config.APP_BASE_PATH / header['path'] / payload
-                    file.touch()
-                if resource == "USER":
-                    auth.CTSSAuth.sign_up(payload)
-                    server_util.create_user_workspace(payload) # only username enough, payload consists both credentials
-                if resource == "ADMIN":
-                    auth.CTSSAuth.sign_up(payload)
-            
-            elif method == "READ":
-                if resource == "FILE":
-                    file = config.APP_BASE_PATH / header['path']
-                    file_content = file.read_text()
-                    packet = util.serialize_packet("READ", "FILE", content=file_content)
-                    self.send(client, packet)
-
-                if resource == "FOLDER":
-                    folder_path = config.APP_BASE_PATH / header['path']
-                    folder_files = server_util.get_files_info(folder_path)
-                    packet = util.serialize_packet("READ", "FOLDER", content=folder_files)
-                    self.send(client, packet)
-                if resource == "USER":
-                    verified = auth.CTSSAuth.sign_in(payload)
-                if resource == "ADMIN":
-                    verified = auth.CTSSAuth.sign_in(payload)
-            
-            elif method == "UPDATE":
-                if resource == "FILE":
-                    file = config.APP_BASE_PATH / header['path']
-                    file.touch()
-                    file.write_text(payload)
-                elif resource == "FOLDER":
-                    # NOTE Feature not planned
-                    pass
-
-            elif method == "DELETE":
-                if resource == "FILE":
-                    file = config.APP_BASE_PATH / header['path'] / payload
-                    file.unlink()
-                if resource == "USER":
-                    auth.CTSSAuth.delete_account(payload)
-                    server_util.delete_user_workspace(payload)
-                if resource == "ADMIN":
-                    auth.CTSSAuth.delete_account(payload)
-
-            elif method == "SHARE":
-                if resource == "FILE":
-                    path = pathlib.Path(header['path'])
-                    file_name = path.name
-                    sender_path = config.APP_BASE_PATH / path
-                    receiver_path = config.APP_BASE_PATH / pathlib.Path(str(config.USER_FILES_PATH).format(payload)) / file_name
-                    receiver_path.touch()
-                    receiver_path.write_text(sender_path.read_text())
-
-'''

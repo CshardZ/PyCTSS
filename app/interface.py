@@ -12,7 +12,6 @@ class Interface:
         self.screen = rich.console.Console()
         self.file: file.File
 
-
     def show_header(self):
         self.screen.clear()
         self.screen.rule(f"[bold]{config.APP_NAME}[/bold]")
@@ -21,23 +20,20 @@ class Interface:
         print("load()")
 
     def show_splash_screen(self):
-        def draw(progress): #TODO can move this to util or ... app_util?
-            bar = ("░" * progress).ljust(100)
-            self.clear_screen()
-            self.screen.print("\n" * 10)
-            self.screen.print(config.APP_LOGO, justify="center")
-            self.screen.print(f"0 |{bar}| 100", justify="center")
-
-        loading = 0
-        steps = [10, 20, 30]
-        while loading < 100:
-            draw(loading)
-            time.sleep(1)
-            loading += random.choice(steps)
-
-        draw(100)
-        self.screen.print("\nPLEASE WAIT", justify="center")
+        self.screen.clear()
         time.sleep(3)
+        self.screen.print("\n\n\n\n")
+        self.screen.print(config.APP_LOGO, justify="center")
+        time.sleep(2)
+        app_util.show_progress_bar(self.screen)
+        time.sleep(3)
+        self.screen.print("\n[bold][blue]Welcome[/blue][/bold]", justify="center")
+        time.sleep(2)
+        self.screen.print("[bold][blue]to[/blue][/bold]", justify="center")
+        time.sleep(1)
+        self.screen.print("[bold][blue]PyCTSS[/blue][/bold]", justify="center")
+        time.sleep(2)
+
 
     def choose_from_menu(self, options):
         self.screen.print()
@@ -177,6 +173,7 @@ class UserInterface(Interface):
 
     def start(self):
         self.client.connect_to_server()
+        self.show_splash_screen()
         self.interact()
 
     def show_header(self):

@@ -2,6 +2,8 @@ from datetime import datetime
 import itertools
 from . import config
 import rich
+from rich.progress import Progress
+import time
 
 
 def create_base_dirs(): # NOTE server only
@@ -68,10 +70,28 @@ def bread_crumbs_for(path):
     return "lan.pyctss.app > " + " > ".join(parts[start:])
 
 
+def show_progress_bar():
+    with Progress() as progress:
+        task = progress.add_task("Working...", total=100)
 
+        while not progress.finished:
+            progress.update(task, advance=1)
+            time.sleep(0.02)
 
+import time
+from rich.console import Console
+from rich.progress import Progress, BarColumn
+from rich.align import Align
+from rich.live import Live
 
+def show_progress_bar(console):
+    progress = Progress(
+        BarColumn(),
+        expand=False
+    )
+    task = progress.add_task("", total=100)
+    with Live(Align.center(progress), console=console, refresh_per_second=10):
+        for _ in range(100):
+            progress.update(task, advance=1)
+            time.sleep(0.05)
 
-
-
-create_client_dirs()
