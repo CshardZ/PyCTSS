@@ -7,28 +7,37 @@ from app.user import CTSSUser
 
 class PyCTSSApp:
     def __init__(self):
-        self.interface = Interface()
-        self.mode = "USER"
+        self.user = CTSSUser('GUEST', 'GUEST')
+        self.guest_client = CTSSClient(self.user)
+        self.interface = Interface(self.guest_client)
 
-    def client_mode(self):
-        # authenticate user or admin or anonymous then
-        user = CTSSUser(('vivek', 'password'),'ADMIN')
-        client = CTSSClient()
+
+    def client_mode(self, username, role):
+        user = CTSSUser(username, role)
+        client = CTSSClient(user)
         interface = AdminInterface(user, client)
+        # interface = UserInterface(user, client)
         interface.start()
-        interface.stop()
 
     def server_mode(self):
         server = CTSSServer() # Should take a LOGGING Interface
         server.start()
-        server.stop()
 
     def ask_app_mode(self):
         self.mode = input("mode c or s: ")
 
+    def authenticate(self):
+        username, verified, role = self.interface.authenticate()
+        if not verified:
+            raise Exception("Verification Failed: Wrong username or password")
+        return username, verified, role
+
     def run(self):
+        self.ask_app_mode()
         if self.mode == 'c':
-            self.client_mode()
+            self.guest_client.connect_to_server()
+            username, _, role = self.authenticate()
+            self.client_mode(username, role)
         else:
             self.server_mode()
 
@@ -37,7 +46,6 @@ class PyCTSSApp:
 
 if __name__ == '__main__':
     app = PyCTSSApp()
-    app.ask_app_mode()
     app.run()
 
 """

@@ -12,3 +12,5 @@ def get_files_info(path):
             'updated': datetime.fromtimestamp(stats.st_mtime).strftime("%Y.%m.%d %H:%M:%S")
         }
     return files_info
+
+

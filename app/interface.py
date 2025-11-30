@@ -5,13 +5,13 @@ import rich.console, rich.prompt
 from . import app_util
 from . import config
 from . import file
+from auth import auth
 
 
 class Interface:
-    def __init__(self):
+    def __init__(self, client=None):
         self.screen = rich.console.Console()
-        self.file: file.File
-
+        self.client = client
 
     def show_header(self):
         self.screen.clear()
@@ -21,29 +21,26 @@ class Interface:
         print("load()")
 
     def show_splash_screen(self):
-        def draw(progress): #TODO can move this to util or ... app_util?
-            bar = ("░" * progress).ljust(100)
-            self.clear_screen()
-            self.screen.print("\n" * 10)
-            self.screen.print(config.APP_LOGO, justify="center")
-            self.screen.print(f"0 |{bar}| 100", justify="center")
-
-        loading = 0
-        steps = [10, 20, 30]
-        while loading < 100:
-            draw(loading)
-            time.sleep(1)
-            loading += random.choice(steps)
-
-        draw(100)
-        self.screen.print("\nPLEASE WAIT", justify="center")
+        self.screen.clear()
         time.sleep(3)
+        self.screen.print("\n\n\n\n")
+        self.screen.print(config.APP_LOGO, justify="center")
+        time.sleep(2)
+        app_util.show_progress_bar(self.screen)
+        time.sleep(3)
+        self.screen.print("\n[bold][blue]Welcome[/blue][/bold]", justify="center")
+        time.sleep(2)
+        self.screen.print("[bold][blue]to[/blue][/bold]", justify="center")
+        time.sleep(1)
+        self.screen.print("[bold][blue]PyCTSS[/blue][/bold]", justify="center")
+        time.sleep(2)
+
 
     def choose_from_menu(self, options):
+        self.screen.print()
         self.screen.rule(characters="-", style="grey")
         self.screen.print("[bold blue]Choose From Menu[/bold blue]")
         self.screen.rule(characters="-", style="grey")
-
         menu = app_util.build_menu_info(options)
         for command, option in menu.items():
             self.screen.print(command, option)
@@ -55,19 +52,16 @@ class Interface:
         else:
             return ""
 
-    def prompt_login_credentials(self):
+    def authenticate(self):
         self.show_header()
-        username = rich.prompt.Prompt.ask("Username")
-        password = rich.prompt.Prompt.ask("Password", password=True)
-        return username, password #TODO Must return hashed password, build a custom hashing function with salting
+        username, verified, role = auth.CTSSAuth.sign_in(self.client) #TODO move auth calls this to client side
+        return username, verified, role
 
-    def open_file_explorer(self, files_info):
+    def files_table(self, files_info):
         files_table = app_util.build_rich_table(["File Number", "File Name", "Size", "Created", "Updated"])
-
         for index, details in files_info.items():
             index = f"{int(index):4d}"
             files_table.add_row(index,*details.values())
-            
         self.screen.print(files_table, justify="center")
 
 
@@ -82,181 +76,161 @@ class AdminInterface(Interface):
     def __init__(self, user, client):
         super().__init__()
         self.user = user
-        self.current_path = config.CLIENT_SIDE_RELATIVE_ADMINS
-        self.file: file.File
         self.client = client
+        self.current_path = config.CLIENT_SIDE_RELATIVE_ADMINS
+        self.admin_input = ""
     
     def start(self):
-        self.client.connect_to_server() #NOTE can be done in init itself
-        # while True:
-        self.home()
+        self.client.connect_to_server()
+        # self.show_splash_screen()
         self.interact()
-        self.stop()
-
-
-    def stop(self):
-        pass
-
 
     def show_header(self):
         super().show_header()
+        self.screen.print(f"[yellow]{app_util.bread_crumbs_for(self.current_path)}[/yellow]")
+        self.screen.rule()
+        self.screen.print()
 
+    def interact(self):
+        while True:
+            self.home_view()
 
-    def home(self):
+    def home_view(self):
         self.show_header()
+        self.admin_input = self.choose_from_menu([
+            "Credentials-Registry",
+            "Manage-Users",
+        ])
+
+        if self.admin_input == "Credentials-Registry":
+            self.folder_view()
+        if self.admin_input == "Manage-Users":
+            self.manage_users_view(["Create User", "Delete User"])
+
+    def manage_users_view(self, options):
+        self.current_path = self.current_path / self.admin_input
+        options.append('Go Back')
+        self.show_header()
+        self.admin_input = self.choose_from_menu(options)
+        if self.admin_input == "Go Back":
+            self.current_path = self.current_path.parent
+
+        self._handle_manage_users(self.admin_input)
+
+    
+    def folder_view(self):
+        self.current_path = self.current_path / self.admin_input
+        while True:
+            files_details = self.client.read_folder(self.current_path)
+            self.show_header()
+            self.files_table(files_details)
+            self.admin_input = self.choose_from_menu([
+                "View File",
+                "Go Back",
+            ])
+
+            if self.admin_input == "Go Back":
+                self.current_path = self.current_path.parent
+                break
+
+            self._handle_file_operation(self.admin_input)
 
 
-    def interact(self, options=None):
-        if not options:
-            options = [
-                "Credentials-Registry",
-                "Manage-Users",
-            ]
-
-        choice = self.choose_from_menu(options)
-        self.current_path = self.current_path / choice
-
-        if choice == "Credentials-Registry":
-            self.file_explorer()
-        elif choice == "Manage-Users":
-            self.manage_users()
+    def _handle_file_operation(self, admin_input):
+        file_name = rich.prompt.Prompt.ask("Enter file name")
+        self.current_path = self.current_path / file_name
+        self.show_header()
+        
+        if admin_input == "Read File":
+            temp_file = self.client.read_file(self.current_path)
+            self.file = file.CTSSFileHandler(temp_file)
+            self.file.open()
+            self.file.view()
 
         self.current_path = self.current_path.parent
 
-
-    def file_explorer(self):
-        self.show_header()
-        # Request server for files in a particular path
-        self.client.send_request("FILES_LIST", self.current_path)
-        # server gets all files details from that path and gives it back
-        response = self.client.get_response("FILES_LIST")
-        # convert that to object
-        super().open_file_explorer(dict(response))
-        # display here all files
-        # chose a file
-        # request server for content of that file
-        # print the content here with prompt toolkit for edit
-        # get the new content and
-        # send the data, expecting no reponse from server for that.
-        # server updates the file with new content.
-        # file_name = self.choose_from_files()
-        # self.current_path = self.current_path / file_name
-        # self.file = file.File(self.current_path)
-        # self.view_file()
-        # self.current_path = self.current_path.parent
-
-
-    def manage_users(self):
-        options = [
-            "Create User",
-            "Delete User",
-        ]
-
-        choice = self.choose_from_menu(options)
-
-        if choice == "Create User":
-            self.create_normal_user()
-        elif choice == "Delete User":
-            self.delete_normal_user()
-
-
-    def create_normal_user(self):
-        new_username = rich.prompt.Prompt.ask("New Username")
-        new_password = rich.prompt.Prompt.ask("New Password", password=True)
-        confirm_password = rich.prompt.Prompt.ask("Confirm Password", password=True)
-        app_util.create_user(new_username, new_password)
-
-
-    def delete_normal_user(self):
-        username = rich.prompt.Prompt.ask("New Username")
-        app_util.delete_user(username)
-
-    
-    def view_file(self):
-        self.show_header()
-        self.file.open()
-        self.file.view()  
+    def _handle_manage_users(self, admin_input):
+        if admin_input == "Create User":
+            auth.CTSSAuth.initiate_user_creation(self.client)
+        elif admin_input == "Delete User":
+            auth.CTSSAuth.initiate_user_deletion(self.client)
 
 
 
 class UserInterface(Interface):
-    """
-    User Tasks:
-        - Share Files
-        - Message other users
-    """
 
-    def __init__(self, user):
+    def __init__(self, user, client):
         super().__init__()
         self.user = user
-        self.current_path = pathlib.Path(str(config.USER_PERSONAL_PATH).format(self.user.username))
+        self.client = client
+        self.user_path = pathlib.Path(str(config.CLIENT_SIDE_RELATIVE_USERS).format(self.user.username))
+        self.current_path = self.user_path
+        self.user_input = ""
 
+    def start(self):
+        self.client.connect_to_server()
+        self.show_splash_screen()
+        self.interact()
 
-    def home(self):
-        self.show_header(self.current_path)
-        choice = self.choose_from_menu([
+    def show_header(self):
+        super().show_header()
+        self.screen.print(f"[yellow]{app_util.bread_crumbs_for(self.current_path)}[/yellow]")
+        self.screen.rule()
+        self.screen.print()
+
+    def interact(self):
+        while True:
+            self.home_view()
+            self.folder_view()
+
+    def home_view(self):
+        self.show_header()
+        self.user_input = self.choose_from_menu([
             "Files",
             "Shared",
-            "Contact",
             "Profile",
+            "Setting"
         ])
-        if not choice is None:
-            self.current_path = self.current_path / choice
 
-        if choice == "Files":
-            self.open_file_explorer()
+    def folder_view(self):
+        self.current_path = self.current_path / self.user_input
+        while True:
+            files_details = self.client.read_folder(self.current_path)
+            self.show_header()
+            self.files_table(files_details)
+            self.user_input = self.choose_from_menu([
+                "Create File",
+                "Edit File",
+                "Delete File",
+                "Share File",
+                "Go Back",
+            ])
 
-        self.current_path = self.current_path.parent
+            if self.user_input == "Go Back":
+                self.current_path = self.current_path.parent
+                break
 
-    def open_file_explorer(self):
-        super().open_file_explorer(self.current_path)
-        choice = self.choose_from_menu([
-            "Create File",
-            "Open File",
-            "Delete File",
-        ]).lower()
+            self._handle_file_operation(self.user_input)
 
-        if choice == 'create file':
-            self.create_file()
-        elif choice == 'open file':
-            self.edit_file()
-        elif choice == 'delete file':
-            self.delete_file()
 
-    def create_file(self): #TODO check for existing file
-        file_name = rich.prompt.Prompt.ask("Enter Filename With Extensoin: ")
-        file_name = '_'.join(file_name.split(' '))
-        (self.current_path / file_name).touch()
-
-    def edit_file(self):
-        file_name = self.choose_from_files()
+    def _handle_file_operation(self, user_input):
+        file_name = rich.prompt.Prompt.ask("Enter file name")
         self.current_path = self.current_path / file_name
-        self.file = file.File(self.current_path)
-        self.show_header(self.current_path)
-        self.file.open()
-        self.file.edit()    
-
-        save = rich.prompt.Prompt.ask("Save file (y or n): ")
-        if save == 'y':
+        self.show_header()
+        
+        if user_input == "Create File":
+            self.client.create_file(self.current_path)
+        elif user_input == "Edit File":
+            temp_file = self.client.read_file(self.current_path)
+            self.file = file.CTSSFileHandler(temp_file)
+            self.file.open()
+            self.file.edit()
             self.file.save()
-            self.screen.print("File Saved")
-        else:
-            self.screen.print("File Not Saved")
-        self.screen.print("Please wait...")
+            self.client.update_file(self.current_path, content = self.file.read_text())
+        elif user_input == "Delete File":
+            self.client.delete_file(self.current_path)
+        elif user_input == "Share File":
+            receiver = rich.prompt.Prompt.ask("Enter Receiver Username")
+            self.client.share_file(self.current_path, receiver=receiver)
+        
         self.current_path = self.current_path.parent
-        time.sleep(3)
-        self.clear_screen()
-
-    def delete_file(self):# TODO check for non-existing file
-        file_name = rich.prompt.Prompt.ask("Enter Filename With Extensoin: ")
-        file_name = '_'.join(file_name.split(' '))
-        (self.current_path / file_name).unlink()
-
-    def send_message(self):
-        pass
-    def receive_message(self):
-        pass
-    def send_file(self):
-        pass
-    def receive_file(self):
-        pass

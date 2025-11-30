@@ -1,9 +1,11 @@
 import socket
 import threading
-import time
 from app import config
 from . import server_util
-import json # standard format for data serialization
+import json
+from util import util
+from auth import auth
+import pathlib
 
 
 class CTSSServer:
@@ -12,68 +14,129 @@ class CTSSServer:
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.host = socket.gethostname()
         self.ip = socket.gethostbyname(self.host)
-
+        self.clients = {}
 
     def start(self):
         self.sock.bind((self.ip, 5000))
-        self.sock.listen(5)
-        print(self.ip, "Server started, now listening...")
+        self.sock.listen()
+        print(self.ip, "SERVER STARTED\n")
         while True:
             client, addr = self.accept_connection()
-            thread = threading.Thread(target=self.handle_client, args=(client, addr))
-            # IMP TODO get the username bound to the address, need it for serving personal files
+            thread = threading.Thread(target=self.handle_client, args=(client,))
             thread.start()
-            # Above mechanism will create destroy multiple threads per client per task as client requests
-            # Check if the thread can be kept alive till client request END CONNECTION
-            # manage all tasks in task stack something like that.
-            print("Active Clients: ", threading.active_count()-1)            
-
-    def get_files(self, request):
-        pass
-
-
-    def handle_client(self, client, addr):
-        while True:
-            request = self.receive(client)
-            if request:
-                if request.split("[SEP]")[0] == "FILES_LIST":
-                    dir_path = config.APP_BASE_PATH / request.split("[SEP]")[1]
-                    print("Ppath is",dir_path, "app base is:", config.APP_BASE_PATH)
-                    payload = self.get_files_list(dir_path)
-                    client.send(payload)
-                break
-
-    def listen(self):
-        self.sock.bind((self.ip, 5000))
-        self.sock.listen()
-        print(self.ip,"Server Started, now listening...")
-
-    def stop(self):
-        self.sock.close()
-        print("Server Stopped")
-
-    def get_files_list(self, dir_path):
-        data = server_util.get_files_info(dir_path)
-        payload = json.dumps(data).encode()
-        return payload
 
     def accept_connection(self):
         client, address = self.sock.accept()
-        """
-        Got Connection Request From:  <socket.socket fd=588, family=2, type=1, proto=0, laddr=('192.168.1.10', 5000), raddr=('192.168.1.10', 60750)> ('192.168.1.10', 60750)
-        """
         client_address = f"{address[0]}:{address[1]}"
         client_name = socket.gethostbyaddr(address[0])[0]
-        print(f"Incoming Connection Request From: CTSSClient-{client_address}-{client_name}")
+        print(f"[CONNECTION]: CTSSClient-{client_address}-{client_name}")
+        handshake_request = self.receive(client)
+        username = handshake_request['payload']
+        self.clients[username] = client
         return client, address
 
+    def handle_client(self, client):
+        while True:
+            request = self.receive(client)
+            if request:
+                packet = RequestHandler(request).handle_request()
+                if packet:
+                    client.send(packet)
 
     def receive(self, client):
-        # TODO Implement length prefixed framming for message transmission
-        data = client.recv(1024).decode('utf-8')
-        print("SERVER:Message Received: ", data)
+        # TODO Cannot handle large data
+        raw = client.recv(1024)
+        data = None
+        if raw:
+            data = json.loads(raw.decode('utf-8'))
+            print("[REQUEST]:", raw)
         return data
 
 
-    def send(self):
-        pass
+    def send(self, client, packet):
+        client.send(packet)
+
+
+
+
+class RequestHandler:
+
+    def __init__(self, request):
+        self.header = request['header']
+        self.method = request['method']
+        self.resource = request['resource']
+        self.payload = request['payload']
+        self.app_base_path = config.APP_BASE_PATH
+
+        self._dispatch= {
+            ("CREATE", "FILE"): self._create_file,
+            ("READ", "FILE"): self._read_file,
+            ("UPDATE", "FILE"): self._update_file,
+            ("DELETE", "FILE"): self._delete_file,
+
+            ("CREATE", "USER"): self._create_user,
+            ("READ", "USER"): self._read_user,
+            ("DELETE", "USER"): self._delete_user,
+            
+            ("CREATE", "ADMIN"): None,
+            ("READ", "ADMIN"): None,
+            ("DELETE", "ADMIN"): None,
+
+            ("READ", "FOLDER"): self._read_folder,
+            ("UPDATE", "FOLDER"): None,
+
+
+            ("SHARE", "FILE"): self._share_file,
+        }
+
+    def handle_request(self):
+        key = (self.method, self.resource)
+        handler = self._dispatch.get(key, None)
+        if handler:
+            packet = handler()
+            return packet
+
+    def _create_file(self):
+        file = self.app_base_path / self.header['path']
+        file.touch()
+    
+    def _read_file(self):
+        file_path = self.app_base_path / self.header['path']
+        file_content = file_path.read_text()
+        packet = util.serialize_packet("READ", "FILE", content=file_content)
+        return packet
+
+    def _update_file(self):
+        file_path = self.app_base_path / self.header['path']
+        file_path.touch()
+        file_path.write_text(self.payload)
+
+    def _delete_file(self):
+        file_path = self.app_base_path / self.header['path']
+        file_path.unlink()
+
+    def _share_file(self):
+        path = pathlib.Path(self.header['path'])
+        file_name = path.name
+        sender_path = self.app_base_path / path
+        receiver_path = self.app_base_path / pathlib.Path(str(config.USER_FILES_PATH).format(self.payload)) / file_name
+        receiver_path.touch()
+        receiver_path.write_text(sender_path.read_text())
+
+    def _read_folder(self):
+        folder_path = self.app_base_path / self.header['path']
+        folder_files = server_util.get_files_info(folder_path)
+        packet = util.serialize_packet("READ", "FOLDER", content=folder_files)
+        return packet
+    
+    def _create_user(self):
+        auth.CTSSAuth.create_account(self.payload)
+
+    def _read_user(self):
+        username, verified, role = auth.CTSSAuth.verify_sign_in(self.payload)
+        packet = util.serialize_packet('READ', 'USER', content=(username, verified, role))
+        print("server end:", packet)
+        return packet
+
+    def _delete_user(self):
+        auth.CTSSAuth.delete_account(self.payload)
