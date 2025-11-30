@@ -40,6 +40,7 @@ class Interface:
         time.sleep(3)
 
     def choose_from_menu(self, options):
+        self.screen.print()
         self.screen.rule(characters="-", style="grey")
         self.screen.print("[bold blue]Choose From Menu[/bold blue]")
         self.screen.rule(characters="-", style="grey")
@@ -177,6 +178,12 @@ class UserInterface(Interface):
     def start(self):
         self.client.connect_to_server()
         self.interact()
+
+    def show_header(self):
+        super().show_header()
+        self.screen.print(f"[yellow]{app_util.bread_crumbs_for(self.current_path)}[/yellow]")
+        self.screen.rule()
+        self.screen.print()
 
     def interact(self):
         while True:

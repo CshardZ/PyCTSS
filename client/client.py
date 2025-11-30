@@ -61,6 +61,9 @@ class CTSSClient:
     def update_file(self, path, content):
         self._send('UPDATE', 'FILE', path, content)
 
+    def delete_file(self, path):
+        self._send('DELETE', 'FILE', path)
+
     def share_file(self, path, receiver):
         self._send('SHARE', 'FILE', path, receiver)
 
