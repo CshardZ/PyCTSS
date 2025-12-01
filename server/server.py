@@ -1,25 +1,26 @@
 import socket
 import threading
-from app import config
 from . import server_util
 import json
 from util import util
 from auth import auth
 import pathlib
 
+import config
 
 class CTSSServer:
 
-    def __init__(self):
+    def __init__(self, logger):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.host = socket.gethostname()
         self.ip = socket.gethostbyname(self.host)
+        self.logger = logger
         self.clients = {}
 
     def start(self):
-        self.sock.bind((self.ip, 5000))
+        self.sock.bind((self.ip, config.SERVER_PORT))
         self.sock.listen()
-        print(self.ip, "SERVER STARTED\n")
+        print(f"Server started... Listening at IP:{self.ip} PORT:{config.SERVER_PORT}")
         while True:
             client, addr = self.accept_connection()
             thread = threading.Thread(target=self.handle_client, args=(client,))
@@ -39,9 +40,19 @@ class CTSSServer:
         while True:
             request = self.receive(client)
             if request:
-                packet = RequestHandler(request).handle_request()
-                if packet:
-                    client.send(packet)
+                if request['resource'] == 'HANDSHAKE':
+                    self.clients[request['payload']] = client
+                elif request['resource'] == 'DISCONNECT':
+                    client.shutdown(socket.SHUT_RDWR)
+                    client.close()
+                    self.clients.pop(request['payload'], None)
+                    print(f"[DISCONNECTION]")
+                    break
+                else:
+                    packet = RequestHandler(request).handle_request()
+                    if packet:
+                        client.send(packet)
+
 
     def receive(self, client):
         # TODO Cannot handle large data
@@ -51,7 +62,6 @@ class CTSSServer:
             data = json.loads(raw.decode('utf-8'))
             print("[REQUEST]:", raw)
         return data
-
 
     def send(self, client, packet):
         client.send(packet)
@@ -135,7 +145,6 @@ class RequestHandler:
     def _read_user(self):
         username, verified, role = auth.CTSSAuth.verify_sign_in(self.payload)
         packet = util.serialize_packet('READ', 'USER', content=(username, verified, role))
-        print("server end:", packet)
         return packet
 
     def _delete_user(self):

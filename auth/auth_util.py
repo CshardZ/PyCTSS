@@ -1,5 +1,4 @@
-from app import config
-
+import config
 
 def create_user_workspace(username):
     dirs = [

@@ -1,4 +1,4 @@
-from app import config
+import config
 import json
 from copy import deepcopy
 

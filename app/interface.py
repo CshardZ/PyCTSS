@@ -1,11 +1,10 @@
 import time
-import random
 import pathlib
 import rich.console, rich.prompt
-from . import app_util
-from . import config
-from . import file
 from auth import auth
+from . import app_util
+from . import file
+import config
 
 
 class Interface:
@@ -54,8 +53,12 @@ class Interface:
 
     def authenticate(self):
         self.show_header()
-        username, verified, role = auth.CTSSAuth.sign_in(self.client) #TODO move auth calls this to client side
-        return username, verified, role
+        username, verified, role = auth.CTSSAuth.sign_in(self.client)
+        if not verified:
+            self.screen.print("[bold red]Task Failed[/bold /red]: Wrong username or password")
+            return None, None
+        else:
+            return username, role
 
     def files_table(self, files_info):
         files_table = app_util.build_rich_table(["File Number", "File Name", "Size", "Created", "Updated"])
@@ -77,13 +80,14 @@ class AdminInterface(Interface):
         super().__init__()
         self.user = user
         self.client = client
-        self.current_path = config.CLIENT_SIDE_RELATIVE_ADMINS
+        self.current_path = config.CLIENT_RELATIVE_ADMINS_PATH
         self.admin_input = ""
     
     def start(self):
         self.client.connect_to_server()
         # self.show_splash_screen()
         self.interact()
+        self.client.disconnect_from_server()
 
     def show_header(self):
         super().show_header()
@@ -94,12 +98,15 @@ class AdminInterface(Interface):
     def interact(self):
         while True:
             self.home_view()
+            if self.admin_input == "Quit":
+                break
 
     def home_view(self):
         self.show_header()
         self.admin_input = self.choose_from_menu([
             "Credentials-Registry",
             "Manage-Users",
+            "Quit"
         ])
 
         if self.admin_input == "Credentials-Registry":
@@ -163,7 +170,7 @@ class UserInterface(Interface):
         super().__init__()
         self.user = user
         self.client = client
-        self.user_path = pathlib.Path(str(config.CLIENT_SIDE_RELATIVE_USERS).format(self.user.username))
+        self.user_path = pathlib.Path(str(config.CLIENT_RELATIVE_USERS_PATH).format(self.user.username))
         self.current_path = self.user_path
         self.user_input = ""
 
