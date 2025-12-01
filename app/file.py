@@ -17,6 +17,9 @@ class CTSSFileHandler:
         doc = Document(text=self.existing_content)
         prompt("Read-only note (press Enter):\n", default=doc) # TODO not waiting for prompt
 
+    def display(self):
+        print(self.existing_content)
+
     def edit(self):
         self.new_content = prompt(
             "Edit your note (Press Esc + Enter to finish):\n",

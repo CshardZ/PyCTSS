@@ -55,7 +55,7 @@ class Interface:
         self.show_header()
         username, verified, role = auth.CTSSAuth.sign_in(self.client)
         if not verified:
-            self.screen.print("[bold red]Task Failed[/bold /red]: Wrong username or password")
+            self.screen.print("[bold red]Task Failed[/bold red]: Wrong username or password")
             return None, None
         else:
             return username, role
@@ -106,6 +106,7 @@ class AdminInterface(Interface):
         self.admin_input = self.choose_from_menu([
             "Credentials-Registry",
             "Manage-Users",
+            "Chats",
             "Quit"
         ])
 
@@ -188,16 +189,21 @@ class UserInterface(Interface):
     def interact(self):
         while True:
             self.home_view()
-            self.folder_view()
+            if self.user_input == 'Quit':
+                break
 
     def home_view(self):
         self.show_header()
         self.user_input = self.choose_from_menu([
             "Files",
-            "Shared",
-            "Profile",
-            "Setting"
+            "Message",
+            "Quit",
         ])
+
+        if self.user_input == "Files":
+            self.folder_view()
+        elif self.user_input == "Message":
+            self.message_view()
 
     def folder_view(self):
         self.current_path = self.current_path / self.user_input
@@ -216,9 +222,6 @@ class UserInterface(Interface):
             if self.user_input == "Go Back":
                 self.current_path = self.current_path.parent
                 break
-
-            self._handle_file_operation(self.user_input)
-
 
     def _handle_file_operation(self, user_input):
         file_name = rich.prompt.Prompt.ask("Enter file name")
@@ -241,4 +244,39 @@ class UserInterface(Interface):
             self.client.share_file(self.current_path, receiver=receiver)
         
         self.current_path = self.current_path.parent
+
+
+    def message_view(self):
+        receipient = rich.prompt.Prompt.ask("Enter username")
+        self.current_path = self.current_path / self.user_input / receipient
+
+        while True:
+            temp_file = self.client.read_chat(receipient)
+            self.file = file.CTSSFileHandler(temp_file)
+            self.show_header()
+            self.file.open()
+            self.file.display()
+            self.user_input = self.choose_from_menu([
+                "Refresh",
+                "Send Message",
+                "Go Back",
+            ])
+
+            if self.user_input == "Go Back":
+                self.current_path = self.current_path.parent
+                break
+            elif self.user_input == "Refresh":
+                continue
+            elif self.user_input == "Send Message":
+                message = input("Message: ")
+                message = self.user.username + ': ' + message + "\n"
+                updated_content = self.file.existing_content + '\n' + message
+                print(updated_content)
+                self.file.write_text(updated_content)
+                self.client.update_chat(receipient, content=self.file.read_text())
+
+        self.current_path = self.current_path.parent.parent
+
+    def _handle_message_sharing(self, user_input):
+        pass
 

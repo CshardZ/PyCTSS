@@ -84,3 +84,14 @@ class CTSSClient:
     
     def delete_user(self, username):
         self._send('DELETE', 'USER', content = username)
+
+    def read_chat(self, receipient):
+        self._send('READ', 'CHAT', content=(self.user.username, receipient))
+        data = self._receive()
+        temp_file = self.working_path / (self.user.username + '-chat.txt')
+        temp_file.touch()
+        temp_file.write_text(data)
+        return temp_file
+
+    def update_chat(self, receipient, content):
+        self._send('UPDATE', 'CHAT', content=(self.user.username, receipient, content))

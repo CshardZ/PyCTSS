@@ -99,6 +99,9 @@ class RequestHandler:
 
 
             ("SHARE", "FILE"): self._share_file,
+
+            ("READ", "CHAT"): self._read_chat,
+            ("UPDATE", "CHAT"): self._update_chat,
         }
 
     def handle_request(self):
@@ -173,6 +176,36 @@ class RequestHandler:
     def _delete_user(self):
         auth.CTSSAuth.delete_account(self.payload)
         return None, None, None
+
+
+    def _read_chat(self):
+        sender, receiver = self.payload
+        folder_files = server_util.get_files_info(config.CHATS_PATH)
+        for file_info in folder_files.values():
+            file_name, file_extension = file_info['name'].split('.')
+            left, right = file_name.split('AND')
+            if (left==sender and right==receiver) or (left==receiver and right==sender): 
+                file_name = file_name + "." + file_extension
+                file_path = config.CHATS_PATH / file_name
+                if not file_path.is_file():
+                    file_path.touch()
+                file_content = file_path.read_text()
+                packet = util.serialize_packet("READ", "CHAT", content=file_content)
+                return packet, 'INFO', f"Chat file {file_path.name} requested"
+            
+    def _update_chat(self):
+        sender, receiver, file_content = self.payload
+        folder_files = server_util.get_files_info(config.CHATS_PATH)
+        for file_info in folder_files.values():
+            file_name, file_extension = file_info['name'].split('.')
+            left, right = file_name.split('AND')
+            if (left==sender and right==receiver) or (left==receiver and right==sender): 
+                file_name = file_name + "." + file_extension
+                file_path = config.CHATS_PATH / file_name
+                # if not file_path.is_file():
+                    # file_path.touch()
+                file_path.write_text(file_content)
+                return None, 'INFO', f"Chat file {file_path.name} udpated"
 
 
 class ServerLogger:
