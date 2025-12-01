@@ -52,16 +52,16 @@ class CTSSServer:
                     self.logger.success("Incoming disconnection request", username)
                     break
                 else:
-                    packet, log_status, log_message = RequestHandler(request).handle_request()
-                    # TODO pass the logger to RequestHandler, instead doing it here
-                    self.logger.log(log_status, log_message, username)
+                    packet = RequestHandler(request, self.logger, username).handle_request()
                     if packet:
                         client.send(packet)
 
 
     def receive(self, client):
+        request = None
         packet = client.recv(999_999)
-        request = util.deserialize_packet(packet)
+        if packet:
+            request = util.deserialize_packet(packet)
         return request
     
     def send(self, client, packet):
@@ -70,7 +70,9 @@ class CTSSServer:
 
 class RequestHandler:
 
-    def __init__(self, request):
+    def __init__(self, request, logger, client_username):
+        self.logger = logger
+        self.client_username = client_username
         self.header = request['header']
         self.method = request['method']
         self.resource = request['resource']
@@ -111,38 +113,39 @@ class RequestHandler:
     def _create_file(self):
         file = self.app_base_path / self.header['path']
         if file.is_file():
-            return None, 'FAILURE', f"File {file.name} already exists"
+            self.logger.success(f"File {file.name} already exists", self.client_username)
         else:
             file.touch()
-            return None, 'SUCCESS', f"New file {file.name} created"
-        
+            self.logger.success(f"New file {file.name} has been created", self.client_username)
+     
     def _read_file(self):
         file_path = self.app_base_path / self.header['path']
         if file_path.is_file():
             file_content = file_path.read_text()
             packet = util.serialize_packet("READ", "FILE", content=file_content)
-            return packet, 'INFO', f"File {file_path.name} requested"
-        else:
-            return None, 'FAILURE', f"File {file_path.name} doesn't exist"
+            self.logger.info(f"File {file_path.name} requested", self.client_username)
+            return packet
 
+        else:
+            self.logger.failure(f"File {file_path.name} doesn't exist", self.client_username)
 
     def _update_file(self):
         file_path = self.app_base_path / self.header['path']
         if file_path.is_file():
             file_path.touch()
             file_path.write_text(self.payload)
-            return None, 'INFO', f"File {file_path.name} got updated"
-        else:
-            return None, 'FAILURE', f"File {file_path.name} doesn't exist"
+            self.logger.failure(f"File {file_path.name} got updated", self.client_username)
 
+        else:
+            self.logger.failure(f"File {file_path.name} doesn't exist", self.client_username)
 
     def _delete_file(self):
         file_path = self.app_base_path / self.header['path']
         if file_path.is_file():
             file_path.unlink()
-            return None, 'INFO', f"File {file_path.name} got deleted"
+            self.logger.failure(f"File {file_path.name} got deleted", self.client_username)
         else:
-            return None, 'FAILURE', f"File {file_path.name} doesn't exist"
+            self.logger.failure(f"File {file_path.name} doesn't exist", self.client_username)
 
 
     def _share_file(self):
@@ -152,26 +155,26 @@ class RequestHandler:
         receiver_path = self.app_base_path / pathlib.Path(str(config.USER_FILES_PATH).format(self.payload)) / file_name
         receiver_path.touch()
         receiver_path.write_text(sender_path.read_text())
-        return None, 'SUCCESS', f"Clients shared a file"
+        self.logger.info(f"Client shared a file", self.client_username)
+
 
     def _read_folder(self):
         folder_path = self.app_base_path / self.header['path']
         folder_files = server_util.get_files_info(folder_path)
         packet = util.serialize_packet("READ", "FOLDER", content=folder_files)
-        return packet, None, None
+        self.logger.info(f"Folder {folder_path.name} requested", self.client_username)
+        return packet
     
     def _create_user(self):
         auth.CTSSAuth.create_account(self.payload)
-        return None, None, None
 
     def _read_user(self):
         username, verified, role = auth.CTSSAuth.verify_sign_in(self.payload)
         packet = util.serialize_packet('READ', 'USER', content=(username, verified, role))
-        return packet, None, None
+        return packet
 
     def _delete_user(self):
         auth.CTSSAuth.delete_account(self.payload)
-        return None, None, None
 
 
     def _read_chat(self):
@@ -187,7 +190,8 @@ class RequestHandler:
                 path = config.CHATS_PATH / file_name
                 content = path.read_text()
                 packet = util.serialize_packet("READ", "CHAT", content=content)
-                return packet, 'INFO', f"Chat file {file_name} requested"
+                self.logger.success(f"Chat file {file_name} requested", self.client_username)
+                return packet
 
         # Not found then create new
         file_name = f"{pair1}.txt"
@@ -195,7 +199,8 @@ class RequestHandler:
         file_path.touch()
         content = file_path.read_text()
         packet = util.serialize_packet("READ", "CHAT", content=content)
-        return packet, 'INFO', f"Chat file {file_name} requested"
+        self.logger.success(f"Chat file {file_name} requested", self.client_username)
+        return packet
 
 
     def _update_chat(self):
@@ -207,11 +212,10 @@ class RequestHandler:
             if (left==sender and right==receiver) or (left==receiver and right==sender): 
                 file_name = file_name + "." + file_extension
                 file_path = config.CHATS_PATH / file_name
-                # if not file_path.is_file():
-                    # file_path.touch()
                 file_path.write_text(file_content)
-                return None, 'INFO', f"Chat file {file_path.name} udpated"
-        return None, 'ERROR', f"Chat file {file_path.name} not udpated"
+                self.logger.success(f"Chat file {file_name} got updated", self.client_username)
+            self.logger.failure(f"Chat file {file_name} did not udpate", self.client_username)
+
 
 class ServerLogger:
     def __init__(self, server_address,logger_name="PyCTSS"):
@@ -228,18 +232,7 @@ class ServerLogger:
             show_path=False
         )
         handler.setLevel(logging.INFO)
-        # self.logger.handlers.clear()   # avoid duplicate logs
         self.logger.addHandler(handler)
-
-    def log(self, log_status, log_message, username):
-        if log_status == 'SUCCESS':
-            self.success(log_message, username)
-        elif log_status == 'FAILURE':
-            self.failure(log_message, username)
-        elif log_status == 'ERROR':
-            self.error(log_message, username)
-        elif log_status == 'INFO':
-            self.info(log_message, username)
 
     def success(self, msg, username):
         status = "SUCCESS"

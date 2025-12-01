@@ -12,7 +12,8 @@ def create_server_dirs():
         config.ALL_USERS_PATH,
         config.ALL_ADMINS_PATH,
         config.ADMIN_PASSWORDS_PATH,   # file
-        config.USER_PASSWORDS_PATH     # file
+        config.USER_PASSWORDS_PATH,     # file
+        config.CHATS_PATH
     ]
 
     for p in paths:
@@ -22,6 +23,7 @@ def create_server_dirs():
         else:
             p.mkdir(parents=True, exist_ok=True)
 
+    config.ADMIN_PASSWORDS_PATH.write_text("admin=admin\n")
 
 def create_client_dirs():
     paths = [

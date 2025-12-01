@@ -47,9 +47,9 @@ SERVER_PORT = 5000
 
 ALL_USERS_PATH = APP_BASE_PATH / "USERS"
 ALL_ADMINS_PATH = APP_BASE_PATH / "ADMINS"
-ADMIN_PASSWORDS_PATH = ALL_ADMINS_PATH / "Credentials-Registry" / 'admin-passwords.txt'
-USER_PASSWORDS_PATH = ALL_ADMINS_PATH / "Credentials-Registry" / 'user-passwords.txt'
-CHATS_PATH = ALL_ADMINS_PATH / "Chats"
+ADMIN_PASSWORDS_PATH = ALL_ADMINS_PATH / "Passwords-Registry" / 'admin-passwords.txt'
+USER_PASSWORDS_PATH = ALL_ADMINS_PATH / "Passwords-Registry" / 'user-passwords.txt'
+CHATS_PATH = ALL_USERS_PATH / "Chats"
 
 USER_PATH = ALL_USERS_PATH / "{}"
 USER_FILES_PATH = USER_PATH / "Files"

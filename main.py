@@ -4,7 +4,7 @@ from app.interface import Interface, UserInterface, AdminInterface
 from app.user import CTSSUser
 from app.initializer import initialize
 from auth.auth import Role
-
+import time
 
 
 class PyCTSSApp:
@@ -18,6 +18,7 @@ class PyCTSSApp:
     def client_mode(self, username, role):
         user = CTSSUser(username, role)
         client = CTSSClient(user)
+        time.sleep(5)
         if role == Role.ADMIN.value:
             interface = AdminInterface(user, client)
         else:

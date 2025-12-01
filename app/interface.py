@@ -85,7 +85,7 @@ class AdminInterface(Interface):
     
     def start(self):
         self.client.connect_to_server()
-        # self.show_splash_screen()
+        self.show_splash_screen()
         self.interact()
         self.client.disconnect_from_server()
 
@@ -104,13 +104,12 @@ class AdminInterface(Interface):
     def home_view(self):
         self.show_header()
         self.admin_input = self.choose_from_menu([
-            "Credentials-Registry",
+            "Passwords-Registry",
             "Manage-Users",
-            "Chats",
             "Quit"
         ])
 
-        if self.admin_input == "Credentials-Registry":
+        if self.admin_input == "Passwords-Registry":
             self.folder_view()
         if self.admin_input == "Manage-Users":
             self.manage_users_view(["Create User", "Delete User"])
@@ -177,8 +176,9 @@ class UserInterface(Interface):
 
     def start(self):
         self.client.connect_to_server()
-        # self.show_splash_screen()
+        self.show_splash_screen()
         self.interact()
+        self.client.disconnect_from_server()
 
     def show_header(self):
         super().show_header()
