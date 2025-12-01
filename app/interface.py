@@ -1,11 +1,11 @@
 import time
-import random
 import pathlib
 import rich.console, rich.prompt
-from . import app_util
-from . import config
-from . import file
 from auth import auth
+from . import app_util
+from . import file
+import config
+from util import util
 
 
 class Interface:
@@ -53,9 +53,12 @@ class Interface:
             return ""
 
     def authenticate(self):
-        self.show_header()
-        username, verified, role = auth.CTSSAuth.sign_in(self.client) #TODO move auth calls this to client side
-        return username, verified, role
+        username, verified, role = auth.CTSSAuth.sign_in(self.client)
+        if not verified:
+            self.screen.print("[bold red]Task Failed[/bold red]: Wrong username or password")
+            return None, None
+        else:
+            return username, role
 
     def files_table(self, files_info):
         files_table = app_util.build_rich_table(["File Number", "File Name", "Size", "Created", "Updated"])
@@ -77,13 +80,14 @@ class AdminInterface(Interface):
         super().__init__()
         self.user = user
         self.client = client
-        self.current_path = config.CLIENT_SIDE_RELATIVE_ADMINS
+        self.current_path = config.CLIENT_RELATIVE_ADMINS_PATH
         self.admin_input = ""
     
     def start(self):
         self.client.connect_to_server()
-        # self.show_splash_screen()
+        self.show_splash_screen()
         self.interact()
+        self.client.disconnect_from_server()
 
     def show_header(self):
         super().show_header()
@@ -94,15 +98,18 @@ class AdminInterface(Interface):
     def interact(self):
         while True:
             self.home_view()
+            if self.admin_input == "Quit":
+                break
 
     def home_view(self):
         self.show_header()
         self.admin_input = self.choose_from_menu([
-            "Credentials-Registry",
+            "Passwords-Registry",
             "Manage-Users",
+            "Quit"
         ])
 
-        if self.admin_input == "Credentials-Registry":
+        if self.admin_input == "Passwords-Registry":
             self.folder_view()
         if self.admin_input == "Manage-Users":
             self.manage_users_view(["Create User", "Delete User"])
@@ -141,7 +148,7 @@ class AdminInterface(Interface):
         self.current_path = self.current_path / file_name
         self.show_header()
         
-        if admin_input == "Read File":
+        if admin_input == "View File":
             temp_file = self.client.read_file(self.current_path)
             self.file = file.CTSSFileHandler(temp_file)
             self.file.open()
@@ -163,7 +170,7 @@ class UserInterface(Interface):
         super().__init__()
         self.user = user
         self.client = client
-        self.user_path = pathlib.Path(str(config.CLIENT_SIDE_RELATIVE_USERS).format(self.user.username))
+        self.user_path = pathlib.Path(str(config.CLIENT_RELATIVE_USERS_PATH).format(self.user.username))
         self.current_path = self.user_path
         self.user_input = ""
 
@@ -171,6 +178,7 @@ class UserInterface(Interface):
         self.client.connect_to_server()
         self.show_splash_screen()
         self.interact()
+        self.client.disconnect_from_server()
 
     def show_header(self):
         super().show_header()
@@ -181,16 +189,21 @@ class UserInterface(Interface):
     def interact(self):
         while True:
             self.home_view()
-            self.folder_view()
+            if self.user_input == 'Quit':
+                break
 
     def home_view(self):
         self.show_header()
         self.user_input = self.choose_from_menu([
             "Files",
-            "Shared",
-            "Profile",
-            "Setting"
+            "Message",
+            "Quit",
         ])
+
+        if self.user_input == "Files":
+            self.folder_view()
+        elif self.user_input == "Message":
+            self.message_view()
 
     def folder_view(self):
         self.current_path = self.current_path / self.user_input
@@ -212,15 +225,15 @@ class UserInterface(Interface):
 
             self._handle_file_operation(self.user_input)
 
-
     def _handle_file_operation(self, user_input):
         file_name = rich.prompt.Prompt.ask("Enter file name")
         self.current_path = self.current_path / file_name
-        self.show_header()
         
         if user_input == "Create File":
+            self.show_header()
             self.client.create_file(self.current_path)
         elif user_input == "Edit File":
+            self.show_header()
             temp_file = self.client.read_file(self.current_path)
             self.file = file.CTSSFileHandler(temp_file)
             self.file.open()
@@ -234,3 +247,39 @@ class UserInterface(Interface):
             self.client.share_file(self.current_path, receiver=receiver)
         
         self.current_path = self.current_path.parent
+
+
+    def message_view(self):
+        receipient = rich.prompt.Prompt.ask("Enter username")
+        self.current_path = self.current_path / self.user_input / receipient
+
+        while True:
+            temp_file = self.client.read_chat(receipient)
+            self.file = file.CTSSFileHandler(temp_file)
+            self.show_header()
+            self.file.open()
+            self.file.display_chat()
+            self.user_input = self.choose_from_menu([
+                "Refresh",
+                "Send Message",
+                "Go Back",
+            ])
+
+            if self.user_input == "Go Back":
+                self.current_path = self.current_path.parent
+                break
+            elif self.user_input == "Refresh":
+                continue
+            elif self.user_input == "Send Message":
+                message = input("Message: ")
+                formatted_message = util.format_chat_message(self.user.username, message)
+                updated_content = self.file.existing_content + formatted_message
+                print(updated_content)
+                self.file.write_text(updated_content)
+                self.client.update_chat(receipient, content=self.file.read_text())
+
+        self.current_path = self.current_path.parent.parent
+
+    def _handle_message_sharing(self, user_input):
+        pass
+

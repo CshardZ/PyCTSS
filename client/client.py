@@ -1,6 +1,6 @@
 import socket
 from util import util
-from app import config
+import config
 
 class CTSSClient:
     
@@ -8,16 +8,22 @@ class CTSSClient:
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.host = socket.gethostname()
         self.ip = socket.gethostbyname(self.host)
-        self.working_path = config.CLIENT_TEMP_FOLDER_PATH
+        self.working_path = config.CLIENT_WORKING_DIRECTORY_PATH
         self.user = user
 
     def connect_to_server(self, server_ip="192.168.1.10", server_port=5000): 
-        # TODO need DNS resolver instead direct ip addresses lan.pyctss.app
         self.sock.connect((server_ip, server_port))
-        # Handshake with username
         request = util.serialize_packet(
-            method = "NONE",
-            resource = "NONE",
+            method = "CONNECTION",
+            resource = "HANDSHAKE",
+            content = self.user.username,
+        )
+        self.sock.send(request)
+
+    def disconnect_from_server(self): 
+        request = util.serialize_packet(
+            method = "CONNECTION",
+            resource = "DISCONNECT",
             content = self.user.username,
         )
         self.sock.send(request)
@@ -34,13 +40,10 @@ class CTSSClient:
         self.sock.send(request)
 
     def _receive(self):
+        # TODO fixed message length transmission
         packet = self.sock.recv(999_999)
         response = util.deserialize_packet(packet)
-        header = response['header']
-        method = response['method']
-        resource = response['resource']
         payload = response['payload']
-
         return payload
 
 
@@ -81,3 +84,14 @@ class CTSSClient:
     
     def delete_user(self, username):
         self._send('DELETE', 'USER', content = username)
+
+    def read_chat(self, receipient):
+        self._send('READ', 'CHAT', content=(self.user.username, receipient))
+        data = self._receive()
+        temp_file = self.working_path / (self.user.username + '-chat.txt')
+        temp_file.touch()
+        temp_file.write_text(data)
+        return temp_file
+
+    def update_chat(self, receipient, content):
+        self._send('UPDATE', 'CHAT', content=(self.user.username, receipient, content))

@@ -1,70 +1,15 @@
 import pathlib
 
-"""
-App Directory Structure
-
-PyCTSS
-    |-- Users
-        |-- User 1
-            |-- Files
-            |-- Profile
-            |-- Setting
-        |-- User 2
-            |-- Files
-            |-- Profile
-            |-- Setting
-        |-- User N
-            |-- Files
-            |-- Profile
-            |-- Setting
-
-    |-- Admins
-        |-- Admins
-            |-- Admin 1
-            |-- Admin 2
-            |-- Admin N
-        |-- Logs
-            |-- User Logs
-                |-- User Session Logs
-                |-- User Activity Logs
-                |-- User Tresspass Logs
-            |-- Admin Logs
-            |-- Server Logs
-            |-- Reports
-"""
 
 
+# Base Paths
+# =================================================================================================
 SYSTEM_USER_PATH = pathlib.Path.home()
 SYSTEM_USER_DESKTOP_PATH = SYSTEM_USER_PATH / "Desktop"
 
-CLIENT_TEMP_FOLDER_PATH = SYSTEM_USER_PATH / "PyCTSSClient"
 
-
-CLIENT_SIDE_RELATIVE_ADMINS = pathlib.Path("ADMINS/")
-CLIENT_SIDE_RELATIVE_USERS = pathlib.Path("USERS/{}")
-
-APP_NAME = "PyCTSS"
-APP_BASE_PATH = SYSTEM_USER_DESKTOP_PATH / APP_NAME
-
-ALL_USERS_PATH = APP_BASE_PATH / "USERS"
-ALL_ADMINS_PATH = APP_BASE_PATH / "ADMINS"
-ADMIN_CREDENTIALS_REGISTRY_PATH = ALL_ADMINS_PATH / "Credentials-Registry"
-
-USER_PERSONAL_PATH = ALL_USERS_PATH / "{}"
-USER_FILES_PATH = USER_PERSONAL_PATH / "Files"
-
-
-
-
-RICH_STANDARD_COLORS = [
-    "bright_blue", "bright_magenta", "bright_cyan"
-    "bright_red", "bright_green", "bright_yellow",
-    "black", "red", "green", "yellow", "blue",
-    "magenta", "cyan", "white", "bright_black",
-]
-
-PROMPT_STYLE = "[bold blue3]Command: [/bold blue3]"
-
+# App Configs
+# =================================================================================================
 APP_LOGO = """
 
 ███████████               █████████   ███████████  █████████   █████████ 
@@ -80,3 +25,39 @@ APP_LOGO = """
 ...............░░░░░░....................................................
 
 """
+
+APP_NAME = 'PyCTSS'
+APP_BASE_PATH = SYSTEM_USER_DESKTOP_PATH / APP_NAME
+RICH_STANDARD_COLORS = [
+    "bright_blue", "bright_magenta", "bright_cyan"
+    "bright_red", "bright_green", "bright_yellow",
+    "black", "red", "green", "yellow", "blue",
+    "magenta", "cyan", "white", "bright_black",
+]
+
+PROMPT_STYLE = "[bold blue3]Command: [/bold blue3]"
+
+
+
+# Server Configs
+# =================================================================================================
+SERVER_DOMAIN_NAME = "lan.pyctss.app"
+SERVER_PORT = 5000
+# SERVER_IP = DNS(SERVER_DOMAIN_NAME)
+
+ALL_USERS_PATH = APP_BASE_PATH / "USERS"
+ALL_ADMINS_PATH = APP_BASE_PATH / "ADMINS"
+ADMIN_PASSWORDS_PATH = ALL_ADMINS_PATH / "Passwords-Registry" / 'admin-passwords.txt'
+USER_PASSWORDS_PATH = ALL_ADMINS_PATH / "Passwords-Registry" / 'user-passwords.txt'
+CHATS_PATH = ALL_USERS_PATH / "Chats"
+
+USER_PATH = ALL_USERS_PATH / "{}"
+USER_FILES_PATH = USER_PATH / "Files"
+
+
+
+# Client Configs
+# =================================================================================================
+CLIENT_WORKING_DIRECTORY_PATH = SYSTEM_USER_DESKTOP_PATH / "PyCTSSClient"
+CLIENT_RELATIVE_ADMINS_PATH = pathlib.Path('ADMINS/')
+CLIENT_RELATIVE_USERS_PATH = pathlib.Path('Users/{}')

@@ -2,7 +2,9 @@ from server.server import CTSSServer
 from client.client import CTSSClient
 from app.interface import Interface, UserInterface, AdminInterface
 from app.user import CTSSUser
-
+from app.initializer import initialize
+from auth.auth import Role
+import time
 
 
 class PyCTSSApp:
@@ -10,54 +12,46 @@ class PyCTSSApp:
         self.user = CTSSUser('GUEST', 'GUEST')
         self.guest_client = CTSSClient(self.user)
         self.interface = Interface(self.guest_client)
-
+        self.interface.screen.clear()
+        self.mode = None
 
     def client_mode(self, username, role):
         user = CTSSUser(username, role)
         client = CTSSClient(user)
-        interface = AdminInterface(user, client)
-        # interface = UserInterface(user, client)
+        time.sleep(5)
+        if role == Role.ADMIN.value:
+            interface = AdminInterface(user, client)
+        else:
+            interface = UserInterface(user, client)
         interface.start()
 
     def server_mode(self):
-        server = CTSSServer() # Should take a LOGGING Interface
+        server = CTSSServer()
         server.start()
 
     def ask_app_mode(self):
-        self.mode = input("mode c or s: ")
-
-    def authenticate(self):
-        username, verified, role = self.interface.authenticate()
-        if not verified:
-            raise Exception("Verification Failed: Wrong username or password")
-        return username, verified, role
+        user_input = input("Enter Application Mode\n\t1 - Client\n\t2 - Server\nChoose (1 or 2): ")
+        if user_input == '1':
+            self.mode = 'client'
+        elif user_input == '2':
+            self.mode = 'server'
 
     def run(self):
         self.ask_app_mode()
-        if self.mode == 'c':
+        initialize(self.mode)
+        if self.mode == 'client':
+            self.interface.screen.clear()
             self.guest_client.connect_to_server()
-            username, _, role = self.authenticate()
-            self.client_mode(username, role)
-        else:
+            username, role = self.interface.authenticate()
+            if username:
+                self.client_mode(username, role)
+        elif self.mode == 'server':
+            self.interface.screen.clear()
             self.server_mode()
-
-
-
+        else:
+            print("Selected option is invalid")
+        print('PyCTSS Application Ended')
 
 if __name__ == '__main__':
     app = PyCTSSApp()
     app.run()
-
-"""
-1. Run as Server/Client
-    IF Server THEN 
-        - setup centeral server
-        - setup threading
-        - start listening
-
-    IF Client THEN Authentication(admin/user)
-        - Ensure server running else provide proper message that server is down
-        - Connect to server automatically on auth verification
-        - Ensure client can communicate concurrently while others are also communicating
-        - Start working
-"""

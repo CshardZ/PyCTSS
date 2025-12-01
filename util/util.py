@@ -1,7 +1,7 @@
-from app import config
+import config
 import json
 from copy import deepcopy
-
+from datetime import datetime
 
 # Socket Communication Protocol Format
 SCP_FORMAT = {
@@ -32,3 +32,9 @@ def deserialize_packet(packet):
 
 def app_base_dir_exists():
     return config.APP_BASE_PATH.is_dir()
+
+def format_chat_message(username, message):
+    # [28-Jul-19 | 09:15pm]
+    ts = datetime.now().strftime("[ %d-%b-%y | %I:%M %p ]")
+    padded_user = f"({username:^10})"
+    return f"{ts} — {padded_user} : {message}\n"

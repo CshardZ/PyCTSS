@@ -1,44 +1,48 @@
-from datetime import datetime
 import itertools
-from . import config
 import rich
-from rich.progress import Progress
 import time
+import config
+from rich.progress import Progress, BarColumn
+from rich.align import Align
+from rich.live import Live
 
 
-def create_base_dirs(): # NOTE server only
-    dirs = [
-        config.APP_BASE_PATH / config.ALL_USERS_PATH,
-        config.APP_BASE_PATH / config.ALL_ADMINS_PATH,
-        config.ADMIN_CREDENTIALS_REGISTRY_PATH,
+def create_server_dirs():
+    paths = [
+        config.ALL_USERS_PATH,
+        config.ALL_ADMINS_PATH,
+        config.ADMIN_PASSWORDS_PATH,   # file
+        config.USER_PASSWORDS_PATH,     # file
+        config.CHATS_PATH
     ]
-    for dir in dirs:
-        dir.mkdir(parents=True, exist_ok=True)
+
+    for p in paths:
+        if p.suffix:  
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.touch(exist_ok=True)
+        else:
+            p.mkdir(parents=True, exist_ok=True)
+
+    config.ADMIN_PASSWORDS_PATH.write_text("admin=admin\n")
+
+def create_client_dirs():
+    paths = [
+        config.CLIENT_WORKING_DIRECTORY_PATH
+    ]
+    for p in paths:
+        if p.suffix:  
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.touch(exist_ok=True)
+        else:
+            p.mkdir(parents=True, exist_ok=True)
 
 
-def create_client_dirs(): # NOTE client only, basically a cache area
-    # only for client side temp storage, since server is the central storage
-    config.CLIENT_TEMP_FOLDER_PATH.mkdir(parents=True, exist_ok=True)
 
-
-
-def build_rich_table(cols): #TODO need colors to columns
+def build_rich_table(cols):
     table = rich.table.Table()
     for col in cols:
         table.add_column(col)
     return table
-
-def get_files_info(path): #TODO MOVED TO server_util.py
-    files_info = {}
-    for index, file in enumerate(path.iterdir(), start=1):
-        stats = file.stat()
-        files_info[index] = {
-            'name': file.name,
-            'size': f"{stats.st_size // 1024} Kb",
-            'created': datetime.fromtimestamp(stats.st_birthtime).strftime("%Y.%m.%d %H:%M:%S"),
-            'updated': datetime.fromtimestamp(stats.st_mtime).strftime("%Y.%m.%d %H:%M:%S")
-        }
-    return files_info
 
 
 def build_menu_info(options):
@@ -54,8 +58,7 @@ def build_menu_info(options):
     
 
 def get_commands_for(options):
-    return {option[0].upper():option for option in options} #TODO adding only unique command, ex: Create, Cut would conflict!
-
+    return {option[0].upper():option for option in options}
 
 def bread_crumbs_for(path):
     parts = path.parts
@@ -70,20 +73,6 @@ def bread_crumbs_for(path):
     return "lan.pyctss.app > " + " > ".join(parts[start:])
 
 
-def show_progress_bar():
-    with Progress() as progress:
-        task = progress.add_task("Working...", total=100)
-
-        while not progress.finished:
-            progress.update(task, advance=1)
-            time.sleep(0.02)
-
-import time
-from rich.console import Console
-from rich.progress import Progress, BarColumn
-from rich.align import Align
-from rich.live import Live
-
 def show_progress_bar(console):
     progress = Progress(
         BarColumn(),
@@ -94,4 +83,3 @@ def show_progress_bar(console):
         for _ in range(100):
             progress.update(task, advance=1)
             time.sleep(0.05)
-
