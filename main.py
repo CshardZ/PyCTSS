@@ -22,7 +22,7 @@ class PyCTSSApp:
         interface.start()
 
     def server_mode(self):
-        server = CTSSServer(None)
+        server = CTSSServer()
         server.start()
 
     def ask_app_mode(self):

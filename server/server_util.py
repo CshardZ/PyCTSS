@@ -14,3 +14,8 @@ def get_files_info(path):
     return files_info
 
 
+def get_username_from(client, clients):
+    for username, stored_client in clients.items():
+        if stored_client == client:
+            return username
+    return None

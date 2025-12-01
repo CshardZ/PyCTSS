@@ -148,7 +148,7 @@ class AdminInterface(Interface):
         self.current_path = self.current_path / file_name
         self.show_header()
         
-        if admin_input == "Read File":
+        if admin_input == "View File":
             temp_file = self.client.read_file(self.current_path)
             self.file = file.CTSSFileHandler(temp_file)
             self.file.open()
@@ -176,7 +176,7 @@ class UserInterface(Interface):
 
     def start(self):
         self.client.connect_to_server()
-        self.show_splash_screen()
+        # self.show_splash_screen()
         self.interact()
 
     def show_header(self):
@@ -241,3 +241,4 @@ class UserInterface(Interface):
             self.client.share_file(self.current_path, receiver=receiver)
         
         self.current_path = self.current_path.parent
+
