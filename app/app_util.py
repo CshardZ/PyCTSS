@@ -8,22 +8,31 @@ from rich.live import Live
 
 
 def create_server_dirs():
-    dirs = [
+    paths = [
         config.ALL_USERS_PATH,
         config.ALL_ADMINS_PATH,
-        config.ADMIN_PASSWORDS_PATH,
-        config.USER_PASSWORDS_PATH
+        config.ADMIN_PASSWORDS_PATH,   # file
+        config.USER_PASSWORDS_PATH     # file
     ]
-    for dir in dirs:
-        dir.mkdir(parents=True, exist_ok=True)
+
+    for p in paths:
+        if p.suffix:  
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.touch(exist_ok=True)
+        else:
+            p.mkdir(parents=True, exist_ok=True)
 
 
 def create_client_dirs():
-    dirs = [
+    paths = [
         config.CLIENT_WORKING_DIRECTORY_PATH
     ]
-    for dir in dirs:
-        dir.mkdir(parents=True, exist_ok=True)
+    for p in paths:
+        if p.suffix:  
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.touch(exist_ok=True)
+        else:
+            p.mkdir(parents=True, exist_ok=True)
 
 
 

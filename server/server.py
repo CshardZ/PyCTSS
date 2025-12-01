@@ -1,7 +1,6 @@
 import socket
 import threading
 from . import server_util
-import json
 from util import util
 from auth import auth
 import pathlib
@@ -54,19 +53,17 @@ class CTSSServer:
                     break
                 else:
                     packet, log_status, log_message = RequestHandler(request).handle_request()
+                    # TODO pass the logger to RequestHandler, instead doing it here
                     self.logger.log(log_status, log_message, username)
                     if packet:
                         client.send(packet)
 
 
     def receive(self, client):
-        # TODO Cannot handle large data
-        raw = client.recv(1024)
-        data = None
-        if raw:
-            data = json.loads(raw.decode('utf-8'))
-        return data
-
+        packet = client.recv(999_999)
+        request = util.deserialize_packet(packet)
+        return request
+    
     def send(self, client, packet):
         client.send(packet)
 
@@ -119,8 +116,6 @@ class RequestHandler:
             file.touch()
             return None, 'SUCCESS', f"New file {file.name} created"
         
-
-
     def _read_file(self):
         file_path = self.app_base_path / self.header['path']
         if file_path.is_file():
@@ -157,6 +152,7 @@ class RequestHandler:
         receiver_path = self.app_base_path / pathlib.Path(str(config.USER_FILES_PATH).format(self.payload)) / file_name
         receiver_path.touch()
         receiver_path.write_text(sender_path.read_text())
+        return None, 'SUCCESS', f"Clients shared a file"
 
     def _read_folder(self):
         folder_path = self.app_base_path / self.header['path']
@@ -180,19 +176,28 @@ class RequestHandler:
 
     def _read_chat(self):
         sender, receiver = self.payload
+        pair1 = f"{sender}AND{receiver}"
+        pair2 = f"{receiver}AND{sender}"
+
         folder_files = server_util.get_files_info(config.CHATS_PATH)
         for file_info in folder_files.values():
-            file_name, file_extension = file_info['name'].split('.')
-            left, right = file_name.split('AND')
-            if (left==sender and right==receiver) or (left==receiver and right==sender): 
-                file_name = file_name + "." + file_extension
-                file_path = config.CHATS_PATH / file_name
-                if not file_path.is_file():
-                    file_path.touch()
-                file_content = file_path.read_text()
-                packet = util.serialize_packet("READ", "CHAT", content=file_content)
-                return packet, 'INFO', f"Chat file {file_path.name} requested"
-            
+            file_name = file_info['name']
+            base_name, extension = file_name.split('.')
+            if base_name in (pair1, pair2):
+                path = config.CHATS_PATH / file_name
+                content = path.read_text()
+                packet = util.serialize_packet("READ", "CHAT", content=content)
+                return packet, 'INFO', f"Chat file {file_name} requested"
+
+        # Not found then create new
+        file_name = f"{pair1}.txt"
+        file_path = config.CHATS_PATH / file_name
+        file_path.touch()
+        content = file_path.read_text()
+        packet = util.serialize_packet("READ", "CHAT", content=content)
+        return packet, 'INFO', f"Chat file {file_name} requested"
+
+
     def _update_chat(self):
         sender, receiver, file_content = self.payload
         folder_files = server_util.get_files_info(config.CHATS_PATH)
@@ -206,7 +211,7 @@ class RequestHandler:
                     # file_path.touch()
                 file_path.write_text(file_content)
                 return None, 'INFO', f"Chat file {file_path.name} udpated"
-
+        return None, 'ERROR', f"Chat file {file_path.name} not udpated"
 
 class ServerLogger:
     def __init__(self, server_address,logger_name="PyCTSS"):
@@ -263,30 +268,3 @@ class ServerLogger:
         now = datetime.now().strftime("%d-%b-%y %H:%M:%S")
         rich_msg = f"[{self.logger_name}][bold red] [{status:^10}][/bold red] [grey19]{now}[/grey19] - {client:<20} : [bold dark_blue]{msg}[/bold dark_blue]"
         self.logger.info(rich_msg, extra={"markup": True, 'highlighter':None})
-
-# ServerLogger().success("some message", 'dinesh')
-# ServerLogger().error("some message", 'ganesh')
-# ServerLogger().failure("some message", 'rameshwar')
-# ServerLogger().info("some message", 'gajju')
-# ServerLogger().success("some message", 'dinesh')
-# ServerLogger().error("some message", 'ganesh')
-# ServerLogger().failure("some message", 'rameshwar')
-# ServerLogger().info("some message", 'gajju')
-# ServerLogger().info("some message", 'gajju')
-# ServerLogger().info("some message", 'gajju')
-# ServerLogger().info("some message", 'gajju')
-# ServerLogger().info("some message", 'gajju')
-# ServerLogger().info("some message", 'gajju')
-# ServerLogger().info("some message", 'gajju')
-# ServerLogger().info("some message", 'gajju')
-# ServerLogger().info("some message", 'gajju')
-# ServerLogger().info("some message", 'gajju')
-# ServerLogger().success("some message", 'dinesh')
-# ServerLogger().error("some message", 'ganesh')
-# ServerLogger().failure("some message", 'rameshwar')
-# ServerLogger().info("some message", 'gajju')
-# ServerLogger().info("some message", 'gajju')
-# ServerLogger().info("some message", 'gajju')
-# ServerLogger().info("some message", 'gajju')
-# ServerLogger().info("some message", 'gajju')
-# ServerLogger().info("some message", 'gajju')

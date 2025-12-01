@@ -5,6 +5,7 @@ from auth import auth
 from . import app_util
 from . import file
 import config
+from util import util
 
 
 class Interface:
@@ -52,7 +53,6 @@ class Interface:
             return ""
 
     def authenticate(self):
-        self.show_header()
         username, verified, role = auth.CTSSAuth.sign_in(self.client)
         if not verified:
             self.screen.print("[bold red]Task Failed[/bold red]: Wrong username or password")
@@ -223,14 +223,17 @@ class UserInterface(Interface):
                 self.current_path = self.current_path.parent
                 break
 
+            self._handle_file_operation(self.user_input)
+
     def _handle_file_operation(self, user_input):
         file_name = rich.prompt.Prompt.ask("Enter file name")
         self.current_path = self.current_path / file_name
-        self.show_header()
         
         if user_input == "Create File":
+            self.show_header()
             self.client.create_file(self.current_path)
         elif user_input == "Edit File":
+            self.show_header()
             temp_file = self.client.read_file(self.current_path)
             self.file = file.CTSSFileHandler(temp_file)
             self.file.open()
@@ -255,7 +258,7 @@ class UserInterface(Interface):
             self.file = file.CTSSFileHandler(temp_file)
             self.show_header()
             self.file.open()
-            self.file.display()
+            self.file.display_chat()
             self.user_input = self.choose_from_menu([
                 "Refresh",
                 "Send Message",
@@ -269,8 +272,8 @@ class UserInterface(Interface):
                 continue
             elif self.user_input == "Send Message":
                 message = input("Message: ")
-                message = self.user.username + ': ' + message + "\n"
-                updated_content = self.file.existing_content + '\n' + message
+                formatted_message = util.format_chat_message(self.user.username, message)
+                updated_content = self.file.existing_content + formatted_message
                 print(updated_content)
                 self.file.write_text(updated_content)
                 self.client.update_chat(receipient, content=self.file.read_text())

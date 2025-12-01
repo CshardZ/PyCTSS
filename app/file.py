@@ -1,5 +1,9 @@
 from prompt_toolkit import prompt
 from prompt_toolkit.document import Document
+from rich.console import Console
+from rich.panel import Panel
+from rich.align import Align
+from rich.text import Text
 
 
 class CTSSFileHandler:
@@ -15,10 +19,15 @@ class CTSSFileHandler:
 
     def view(self):
         doc = Document(text=self.existing_content)
-        prompt("Read-only note (press Enter):\n", default=doc) # TODO not waiting for prompt
+        prompt("Read-only note (press Enter):\n", default=doc)
 
-    def display(self):
-        print(self.existing_content)
+    def display_chat(self):
+        # Create a Text object with centered justification so each line is centered
+        text = Text(self.existing_content, justify="left")
+        # Put the centered text into a panel (pick a width or let it expand)
+        panel = Panel(text, title="[bold]Chatbox[/bold]", padding=(1, 2), width=150)
+        # Center the panel itself on the terminal line
+        Console().print(Align.center(panel))
 
     def edit(self):
         self.new_content = prompt(
