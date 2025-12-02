@@ -1,14 +1,14 @@
 import socket
 import threading
-from . import server_util
-from util import util
-from auth import auth
 import pathlib
-import config
-from rich.logging import RichHandler
 import logging
 from datetime import datetime
+from rich.logging import RichHandler
 import rich.console
+import config
+from util import util
+from auth import auth
+from . import server_util
 
 
 
@@ -113,7 +113,7 @@ class RequestHandler:
     def _create_file(self):
         file = self.app_base_path / self.header['path']
         if file.is_file():
-            self.logger.success(f"File {file.name} already exists", self.client_username)
+            self.logger.failure(f"File {file.name} already exists", self.client_username)
         else:
             file.touch()
             self.logger.success(f"New file {file.name} has been created", self.client_username)
@@ -134,7 +134,7 @@ class RequestHandler:
         if file_path.is_file():
             file_path.touch()
             file_path.write_text(self.payload)
-            self.logger.failure(f"File {file_path.name} got updated", self.client_username)
+            self.logger.info(f"File {file_path.name} got updated", self.client_username)
 
         else:
             self.logger.failure(f"File {file_path.name} doesn't exist", self.client_username)
@@ -143,7 +143,7 @@ class RequestHandler:
         file_path = self.app_base_path / self.header['path']
         if file_path.is_file():
             file_path.unlink()
-            self.logger.failure(f"File {file_path.name} got deleted", self.client_username)
+            self.logger.info(f"File {file_path.name} got deleted", self.client_username)
         else:
             self.logger.failure(f"File {file_path.name} doesn't exist", self.client_username)
 

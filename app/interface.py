@@ -1,10 +1,10 @@
 import time
 import pathlib
 import rich.console, rich.prompt
-from auth import auth
+import config
 from . import app_util
 from . import file
-import config
+from auth import auth
 from util import util
 
 
