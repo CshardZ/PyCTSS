@@ -25,7 +25,7 @@ class CTSSFileHandler:
         # Create a Text object with centered justification so each line is centered
         text = Text(self.existing_content, justify="left")
         # Put the centered text into a panel (pick a width or let it expand)
-        panel = Panel(text, title="[bold]Chatbox[/bold]", padding=(1, 2), width=150)
+        panel = Panel(text, title="[bold]Chatbox[/bold]", padding=(1, 2), width=125)
         # Center the panel itself on the terminal line
         Console().print(Align.center(panel))
 
