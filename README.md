@@ -32,8 +32,8 @@ A lightweight Python CLI tool that emulates classic terminal-service behavior ov
     <td><img src="/assets/screenshots/img4.png" alt="SS4" width="500"></td>
   </tr>
   <tr>
-    <td><img src="/assets/screenshots/img3.png" alt="SS5" width="500"></td>
-    <td><img src="/assets/screenshots/img4.png" alt="SS6" width="500"></td>
+    <td><img src="/assets/screenshots/img5.png" alt="SS5" width="500"></td>
+    <td><img src="/assets/screenshots/img6.png" alt="SS6" width="500"></td>
   </tr>
 </table>
 
