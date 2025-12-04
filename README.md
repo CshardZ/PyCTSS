@@ -2,6 +2,11 @@
 
 A lightweight Python CLI tool that emulates classic terminal-service behavior over LAN, inspired by CTSS and early Microsoft Terminal Services/RDS.
 
+## Usage
+- Enusre python is installed and available on SYS/USER Path
+- Manually run `main.py`
+- On windows you can use the `start.bat`, which will create a python venv, install dependencies and run the app
+
 ## Features
 - File operations (CRUD)
 - Client-to-client file sharing
