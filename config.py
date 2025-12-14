@@ -5,7 +5,7 @@ import pathlib
 # Base Paths
 # =================================================================================================
 SYSTEM_USER_PATH = pathlib.Path.home()
-SYSTEM_USER_DESKTOP_PATH = SYSTEM_USER_PATH / "Desktop"
+SYSTEM_USER_DESKTOP_PATH = SYSTEM_USER_PATH / "PyCTSS"
 
 
 # App Configs
@@ -27,7 +27,7 @@ APP_LOGO = """
 """
 
 APP_NAME = 'PyCTSS'
-APP_BASE_PATH = SYSTEM_USER_DESKTOP_PATH / APP_NAME
+APP_BASE_PATH = SYSTEM_USER_DESKTOP_PATH / 'PyCTSS_SERVER'
 RICH_STANDARD_COLORS = [
     "bright_blue", "bright_magenta", "bright_cyan"
     "bright_red", "bright_green", "bright_yellow",
@@ -58,6 +58,6 @@ USER_FILES_PATH = USER_PATH / "Files"
 
 # Client Configs
 # =================================================================================================
-CLIENT_WORKING_DIRECTORY_PATH = SYSTEM_USER_DESKTOP_PATH / "PyCTSSClient"
+CLIENT_WORKING_DIRECTORY_PATH = SYSTEM_USER_DESKTOP_PATH / "PyCTSS_CLIENT"
 CLIENT_RELATIVE_ADMINS_PATH = pathlib.Path('ADMINS/')
 CLIENT_RELATIVE_USERS_PATH = pathlib.Path('Users/{}')
