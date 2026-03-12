@@ -84,7 +84,7 @@ class AdminInterface(Interface):
         self.admin_input = ""
     
     def start(self):
-        self.client.connect_to_server()
+        self.client.connect_to_server(self.client.server_ip, self.client.server_port)
         self.show_splash_screen()
         self.interact()
         self.client.disconnect_from_server()
@@ -121,6 +121,7 @@ class AdminInterface(Interface):
         self.admin_input = self.choose_from_menu(options)
         if self.admin_input == "Go Back":
             self.current_path = self.current_path.parent
+            return
 
         self._handle_manage_users(self.admin_input)
 
@@ -161,11 +162,11 @@ class AdminInterface(Interface):
             auth.CTSSAuth.initiate_user_creation(self.client)
         elif admin_input == "Delete User":
             auth.CTSSAuth.initiate_user_deletion(self.client)
+        self.current_path = self.current_path.parent
 
 
 
 class UserInterface(Interface):
-
     def __init__(self, user, client):
         super().__init__()
         self.user = user
@@ -175,7 +176,7 @@ class UserInterface(Interface):
         self.user_input = ""
 
     def start(self):
-        self.client.connect_to_server()
+        self.client.connect_to_server(self.client.server_ip, self.client.server_port)
         self.show_splash_screen()
         self.interact()
         self.client.disconnect_from_server()
