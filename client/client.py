@@ -11,7 +11,7 @@ class CTSSClient:
         self.working_path = config.CLIENT_WORKING_DIRECTORY_PATH
         self.user = user
 
-    def connect_to_server(self, server_ip="192.168.1.10", server_port=5000): 
+    def connect_to_server(self, server_ip="192.168.1.13", server_port=5000): 
         self.sock.connect((server_ip, server_port))
         request = util.serialize_packet(
             method = "CONNECTION",

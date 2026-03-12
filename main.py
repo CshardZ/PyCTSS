@@ -39,6 +39,8 @@ class PyCTSSApp:
         initialize(self.mode)
         if self.mode == 'client':
             self.interface.screen.clear()
+            # server_ip = input("\nEnter Server IP   : ")
+            # server_port = int(input("Enter Server port : "))
             self.guest_client.connect_to_server()
             username, role = self.interface.authenticate()
             if username:
