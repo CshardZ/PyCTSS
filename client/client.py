@@ -4,14 +4,18 @@ import config
 
 class CTSSClient:
     
-    def __init__(self, user):
+    def __init__(self, user, server_ip=None, server_port=None):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.host = socket.gethostname()
         self.ip = socket.gethostbyname(self.host)
         self.working_path = config.CLIENT_WORKING_DIRECTORY_PATH
         self.user = user
+        self.server_ip = server_ip
+        self.server_port = server_port
 
-    def connect_to_server(self, server_ip="192.168.1.13", server_port=5000): 
+    def connect_to_server(self, server_ip, server_port): 
+        self.server_ip = server_ip
+        self.server_port = server_port
         self.sock.connect((server_ip, server_port))
         request = util.serialize_packet(
             method = "CONNECTION",

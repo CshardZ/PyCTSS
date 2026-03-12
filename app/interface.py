@@ -84,8 +84,8 @@ class AdminInterface(Interface):
         self.admin_input = ""
     
     def start(self):
-        self.client.connect_to_server()
-        # self.show_splash_screen()
+        self.client.connect_to_server(self.client.server_ip, self.client.server_port)
+        self.show_splash_screen()
         self.interact()
         self.client.disconnect_from_server()
 
@@ -167,7 +167,6 @@ class AdminInterface(Interface):
 
 
 class UserInterface(Interface):
-
     def __init__(self, user, client):
         super().__init__()
         self.user = user
@@ -177,7 +176,7 @@ class UserInterface(Interface):
         self.user_input = ""
 
     def start(self):
-        self.client.connect_to_server()
+        self.client.connect_to_server(self.client.server_ip, self.client.server_port)
         self.show_splash_screen()
         self.interact()
         self.client.disconnect_from_server()

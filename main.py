@@ -13,10 +13,12 @@ class PyCTSSApp:
         self.interface = Interface(self.guest_client)
         self.interface.screen.clear()
         self.mode = None
+        self.server_ip = None
+        self.server_port = None
 
     def client_mode(self, username, role):
         user = CTSSUser(username, role)
-        client = CTSSClient(user)
+        client = CTSSClient(user, self.server_ip, self.server_port)
         if role == Role.ADMIN.value:
             interface = AdminInterface(user, client)
         else:
@@ -39,9 +41,9 @@ class PyCTSSApp:
         initialize(self.mode)
         if self.mode == 'client':
             self.interface.screen.clear()
-            # server_ip = input("\nEnter Server IP   : ")
-            # server_port = int(input("Enter Server port : "))
-            self.guest_client.connect_to_server()
+            self.server_ip = input("\nEnter Server IP   : ")
+            self.server_port = int(input("Enter Server port : "))
+            self.guest_client.connect_to_server(self.server_ip, self.server_port)
             username, role = self.interface.authenticate()
             if username:
                 self.client_mode(username, role)
